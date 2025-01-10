@@ -324,14 +324,14 @@ def irc_dressup(m):
     msplit = m.split()
     for i in range(len(msplit)):
         if msplit[i].startswith("http") or msplit[i].startswith("<http"):
-            msplit[i] = msplit[i].replace("_", "underdashreplacementplaceholderdiscord_botregexsucks")
+            msplit[i] = msplit[i].replace("_", "underdashreplacementplaceholderdiscordbotregexsucks")
     m = " ".join(msplit)
     m = dressup_replace(m, "***", "\x1d" + "\x02")
     m = dressup_replace(m, "**", "\x02")
     m = dressup_replace(m, "*", "\x1d")
     m = dressup_replace(m, "```", "")
     m = dressup_replace(m, "_", "\x1d")
-    m = m.replace("underdashreplacementplaceholderdiscord_botregexsucks", "_")
+    m = m.replace("underdashreplacementplaceholderdiscordbotregexsucks", "_")
     return m
 
 def get_reference(reference_message, pin, new_msg_author, webhookid):
