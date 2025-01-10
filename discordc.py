@@ -334,28 +334,28 @@ def irc_dressup(m):
     m = m.replace("underdashreplacementplaceholderdiscord_botregexsucks", "_")
     return m
 
-def get_reference(r, p, a, whid):
+def get_reference(reference_message, pin, new_msg_author, webhookid):
     """ 
     # Get Referenced message
     - Create a "reference" / "reply" -message from a referenced message
     - Combine the original author & content (or pinning information) of new message
     - return the combined string of what the reference is / was
     """
-    rauthor = r.author.name
+    rauthor = reference_message.author.display_name
     
-    if rauthor == "" and str(r.webhook_id) == whid:
+    if rauthor == "" and str(reference_message.webhook_id) == webhookid:
         rauthor = rauthor[0:len(rauthor)-6]
     rurl = ""
     if len(r.attachments) > 0:
-        rurl = get_urls_from_attachments(r.attachments)
+        rurl = get_urls_from_attachments(reference_message.attachments)
         
-    rcont = irc_dressup(r.clean_content.replace("\n", " ").strip())
+    rcont = irc_dressup(reference_message.clean_content.replace("\n", " ").strip())
     if rcont == "":
         rcont = rurl
-    if p == False:
+    if pin == False:
         rfull = f'{discord_settings["relayNickPrefix"]}{rauthor}{discord_settings["relayNickPostfix"]} {rcont} <<<'
     else:
-        rfull = f'{a} {irc.get_word("pinned_message")}: {discord_settings["relayNickPrefix"]}{rauthor}{discord_settings["relayNickPostfix"]} {rcont} <<<'
+        rfull = f'{new_msg_author} {irc.get_word("pinned_message")}: {discord_settings["relayNickPrefix"]}{rauthor}{discord_settings["relayNickPostfix"]} {rcont} <<<'
         
     return rfull
 
@@ -371,19 +371,6 @@ def replace_emojis(content):
         namemoji = ":" + moji.split(":")[1] + ":"  # Extract emoji_name
         content = content.replace(moji, namemoji)
     return content
-
-#def replace_emojis(content):
-#    """ Replace discod emojis with unicode text 
-#    - @todo - fix errorerous regex (vscode/windows warning/error) 
-#    - discordc.py:381: SyntaxWarning: invalid escape sequence '\w'
-#    - regexc = re.compile('<:\w*:\d*>', re.UNICODE)
-#    """
-#    regexc = re.compile('<:\w*:\d*>', re.UNICODE)
-#    findmoji = re.findall(regexc, content)
-#    for moji in findmoji:
-#        namemoji = ":" + moji.split(":")[1] + ":"
-#        content = content.replace(moji, namemoji)
-#    return content
 
 def do_extra_tag_cleanups(message):
     """ 
@@ -742,11 +729,25 @@ async def on_message(message):
     # Topic of the IRC channel
     elif cmd == "!topic" or cmd == "!otsikko":
         irc.query_irc_topic_to_discord(irc_chan)
+            
+    # Report the current BTC/USD value to both linked channels
+    elif cmd == "!btc":
+        irc.report_btc_usd_valuation(irc_chan)
+            
+    # Report the current MSTR/USD value to both linked channels
+    elif cmd == "!mstr":
+        irc.report_mstr_valuation(irc_chan)
+
+    # Report the current market value for requested market symbol through yahoo finance
+    elif cmd == "!value" or cmd == "!kurssi":
+        if len(contentsplit) == 2:
+            symbol_to_query = contentsplit[1]
+            irc.get_and_report_stock_value(irc_chan, symbol_to_query)
 
     # Change language
     elif cmd == "!speak" or cmd == "!viännä" or cmd == "!puhu":
-        if len(message) == 2: # verify that there is the second word
-            new_language = message[1] # take second word as the language param
+        if len(contentsplit) == 2: # verify that there is the second word
+            new_language = contentsplit[1] # take second word as the language param
             set_new_lang = ""
             avail_langs = ""
 

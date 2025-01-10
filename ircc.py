@@ -232,7 +232,7 @@ class IRC:
         """ The IRC-Bot sends a given message to the referred channel """
         self.send_message(irc_chan, message)
 
-    def send_irc_and_discord(self, discord_chan, irc_chan, message): #self.debugPrint("send_irc_and_discord-test")    
+    def send_irc_and_discord(self, irc_chan, message): #self.debugPrint("send_irc_and_discord-test")    
         """ Send message to both IRC-channel and to the connected discord """
         self.send_irc_message(irc_chan, message)
         self.discord.send_discord_message(self.irc_channel_sets[irc_chan]["real_chan"], message)
@@ -704,6 +704,67 @@ class IRC:
         except Exception as e:
             self.debugPrint(f"Error with fetching video duration metadata")
             return None
+        
+    def report_btc_usd_valuation(self, irc_channel):
+        """
+        # Report BTC/USD valuation
+        - fetch the current course from CoinMarketCap
+        - report the current ratio to both linked channels
+        """
+        url = "https://coinmarketcap.com/currencies/bitcoin/"
+        soup = self.get_page_soup(url)
+
+        # Get price element
+        #price_element = soup.find("div", class_="priceValue") # sc-65e7f566-0 WXGwg base-text
+        price_element = soup.find("div", class_="sc-65e7f566-0 czwNaM flexStart alignBaseline")
+        if price_element:
+            price = price_element.text.strip()
+            priceString = f"BTC/USD : {price}"
+        else:
+            priceString = f"Ongelma kurssin hakemisessa."
+        
+        self.send_irc_and_discord(irc_channel, priceString)
+
+    def report_mstr_valuation(self, irc_channel):
+        """
+        # Report MSTR/USD valuation
+        - fetch the current course from Yahoo Markets
+        - report the current ratio to both linked channels
+        """
+        url = "https://finance.yahoo.com/quote/MSTR/"
+        soup = self.get_page_soup(url) # container yf-1tejb6
+ 
+        # Get price element
+        #price_element = soup.find("div", class_="priceValue") # sc-65e7f566-0 WXGwg base-text
+        price_element = soup.find("div", class_="container yf-1tejb6")
+        if price_element:
+            price = price_element.text.strip()
+            priceString = f"MSTR/USD : {price}"
+        else:
+            priceString = f"Ongelma kurssin hakemisessa."
+        
+        self.send_irc_and_discord(irc_channel, priceString)
+
+    def get_and_report_stock_value(self, irc_channel, market_symbol):
+        """
+        # Report MSTR/USD valuation
+        - fetch the current course from Yahoo Markets
+        - report the current ratio to both linked channels
+        """
+        url = f"https://finance.yahoo.com/quote/{market_symbol}/"
+        soup = self.get_page_soup(url) # container yf-1tejb6
+ 
+        # Get price element
+        #price_element = soup.find("div", class_="priceValue") # sc-65e7f566-0 WXGwg base-text
+        price_element = soup.find("div", class_="container yf-1tejb6")
+        if price_element:
+            price = price_element.text.strip()
+            priceString = f"{market_symbol}/USD : {price}"
+        else:
+            priceString = f"Ongelma kurssin hakemisessa."
+        
+        self.send_irc_and_discord(irc_channel, priceString)
+
 
     def process_message_urls(self, message, irc_channel):
         """ 
@@ -1173,6 +1234,20 @@ class IRC:
         # Get & print the Discord channel topic to IRC
         elif cmd == "!topic":
             self.print_discord_topic_to_irc(discord_chan, event.target)
+            
+        # Report the current BTC/USD value to both linked channels
+        elif cmd == "!btc":
+            self.report_btc_usd_valuation(event.target)
+
+        # Report the current MSTR/USD value to both linked channels
+        elif cmd == "!mstr":
+            self.report_mstr_valuation(event.target)
+
+        # Report the current market value for requested market symbol through yahoo finance
+        elif cmd == "!kurssi":
+            if len(message) == 2:
+                symbol_to_query = message[1]
+                self.get_and_report_stock_value(event.target, symbol_to_query)
 
         # Change language
         elif cmd == "!speak" or cmd == "!viännä" or cmd == "!puhu":
