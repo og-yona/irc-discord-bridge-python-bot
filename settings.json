@@ -41,11 +41,11 @@
     "_c11": "// STATUS MESSAGES ('Listening to ...') are rotated for Discord bot's statuses in Discord",
     "status_messages": [
         "[4K] One Rat Spinning to the Free Bird Solo 10 HOURS (FIXED) - YouTube",
-		"the sounds of IRC",
-		"IRC & Discord",
+	"the sounds of IRC",
+	"IRC & Discord",
         "Oldschool IRC mixtape", 
-		"sounds of Discord",
-		"your chat and telling everything to the NSA"
+	"sounds of Discord",
+	"your chat and telling everything to the NSA"
     ],
     "_c12": "// Language / Bot word lists - Use for localizing your bot",
     "localization" : {
