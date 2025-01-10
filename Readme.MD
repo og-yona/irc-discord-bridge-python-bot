@@ -85,5 +85,7 @@ https://discordapp.com/oauth2/authorize?client_id=CLIENT_ID&scope=bot&permission
 Feel free to fork this repo copy/borrow stuff for your own projects but provide a link to this as credit!
 
 A lot of the core code and core functions are "borrowed" from the following to repositories:
+
 https://github.com/OrpheusGr/Discord-IRC-Bridge
+
 https://github.com/milandamen/Discord-IRC-Python
