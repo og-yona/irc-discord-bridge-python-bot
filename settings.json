@@ -40,12 +40,11 @@
     },
     "_c11": "// STATUS MESSAGES ('Listening to ...') are rotated for Discord bot's statuses in Discord",
     "status_messages": [
-        "[4K] One Rat Spinning to the Free Bird Solo 10 HOURS (FIXED) - YouTube",
-	"the sounds of IRC",
-	"IRC & Discord",
-        "Oldschool IRC mixtape", 
-	"sounds of Discord",
-	"your chat and telling everything to the NSA"
+		"[4K] One Rat Spinning to the Free Bird Solo 10 HOURS (FIXED) - YouTube",
+		"the sounds of IRC",
+		"IRC & Discord",
+		"Oldschool IRC mixtape", 
+		"sounds of Discord"
     ],
     "_c12": "// Language / Bot word lists - Use for localizing your bot",
     "localization" : {
@@ -114,7 +113,7 @@
             "shutdownmessage": "Discord-IRC -silta ompi sammumassa oltunansa piällä jota kuinniin",
             "quitmessage": "IRC-Discord -silta sammui oltunansa piällä jota kuinniin",
             "available_languages": "Suatavilla olevat puhheen parret ovat seuraavanlaeset :",
-            "lang_already_in_use": "No voehan tokkiisa! Johan tässä parraansa koettettaan viäntää, mutta jos ei kerta sekkään riitä, niin sittenpä asijalle ee oekkeestaan voe mittään.",
+            "lang_already_in_use": "No voehan tokkiisa! Johan tässä parraansa koettettaan viäntee, mutta jos ei kerta sekkään riitä, niin sittenpä asijalle ee oekkeestaan voe mittään.",
             "lang_in_use": "Parasta aekkoo botti koettaapi sutkautella savvoo.",
             "new_language_announce": "Botti koettaapi parraansa mukkaan viäntee seurraavissa sutkautuksissa sawwoo",
             "topic_word": "Päevän polttava kysymys",
