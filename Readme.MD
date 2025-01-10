@@ -7,7 +7,6 @@
 - Additional Quality of Life features for IRC, such as msg included URL parsing and short information relaying to IRC about the URL
 - Localization for English and Finnish (and Savonian)
 - (More details about features later)
-- NOTE: To run this you'll need to have a clone exception set up on your IRCd's config or one to be requested from the IRC network's opers, as most networks allow 3 clones from the same IP. 
 
 ## Requirements
 - A minimum of Python 3.9 (?) 
