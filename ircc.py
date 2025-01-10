@@ -726,24 +726,8 @@ class IRC:
         self.send_irc_and_discord(irc_channel, priceString)
 
     def report_mstr_valuation(self, irc_channel):
-        """
-        # Report MSTR/USD valuation
-        - fetch the current course from Yahoo Markets
-        - report the current ratio to both linked channels
-        """
-        url = "https://finance.yahoo.com/quote/MSTR/"
-        soup = self.get_page_soup(url) # container yf-1tejb6
- 
-        # Get price element
-        #price_element = soup.find("div", class_="priceValue") # sc-65e7f566-0 WXGwg base-text
-        price_element = soup.find("div", class_="container yf-1tejb6")
-        if price_element:
-            price = price_element.text.strip()
-            priceString = f"MSTR/USD : {price}"
-        else:
-            priceString = f"Ongelma kurssin hakemisessa."
-        
-        self.send_irc_and_discord(irc_channel, priceString)
+        """ Report MSTR/USD valuation to linked channels """
+        self.get_and_report_stock_value(irc_channel, "MSTR")
 
     def get_and_report_stock_value(self, irc_channel, market_symbol):
         """
@@ -1244,7 +1228,7 @@ class IRC:
             self.report_mstr_valuation(event.target)
 
         # Report the current market value for requested market symbol through yahoo finance
-        elif cmd == "!kurssi":
+        elif cmd == "!value" or cmd == "!kurssi":
             if len(message) == 2:
                 symbol_to_query = message[1]
                 self.get_and_report_stock_value(event.target, symbol_to_query)

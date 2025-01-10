@@ -60,6 +60,8 @@ https://discordapp.com/oauth2/authorize?client_id=CLIENT_ID&scope=bot&permission
     - !topic - When typed from IRC, prints the Discord channel topic to IRC - and when typed from Discord, prints out the IRC channel topic to Discord
     - !status - Will print out the current bot/bridge uptime
     - !info - Will print out general info about messages being relayed and how to mention discord users from IRC
+	- !btc - Fetches the current BTC/USD -value from CoinMarketCap and prints it out to linked IRC and Discord channels
+	- !value <symbol> - Fetches the current BTC/USD -value of stock symbol from financen.yahoo.com and prints it out to linked IRC and Discord channels
     - !shutdown to kill the bot. (only for botops) (works on IRC too)  
 - Relays IRC & Discord events to both ways, including:
     - Messages, Replies, Reactions, Pinned messages

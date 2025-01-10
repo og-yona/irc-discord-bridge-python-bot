@@ -346,7 +346,7 @@ def get_reference(reference_message, pin, new_msg_author, webhookid):
     if rauthor == "" and str(reference_message.webhook_id) == webhookid:
         rauthor = rauthor[0:len(rauthor)-6]
     rurl = ""
-    if len(r.attachments) > 0:
+    if len(reference_message.attachments) > 0:
         rurl = get_urls_from_attachments(reference_message.attachments)
         
     rcont = irc_dressup(reference_message.clean_content.replace("\n", " ").strip())
