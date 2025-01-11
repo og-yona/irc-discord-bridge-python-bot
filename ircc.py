@@ -55,10 +55,12 @@ class IRC:
         # init Reactor - the IRC-event -handler
         self.reactor = irc.client.Reactor()
         irc.client.ServerConnection.buffer_class.encoding = "utf-8"
-        irc.client.ServerConnection.buffer_class.errors = "replace"
+        irc.client.ServerConnection.buffer_class.errors = "replace"        
 
         # set configurations from the settings
         self.is_running = 0
+
+        self.ignore_parts_joints = ""
 
         ## ! See the settings.json "comments" - for details concerning the settings !
         self.nick = irc_settings["bot_nickname"]
@@ -457,8 +459,36 @@ class IRC:
         return "<missingword>"
         
     def get_help_dict(self):
+        """ Returns the by current language used help-dictionary  """
         return bot_words["help_dict"]
+    
+    def change_bot_ircnick(self, new_botnick):
+        """ Allows changeing of the bot's IRC name (in case of reconnects / auto-renames etc) - for bot operators only """        
+        self.connection.nick(new_botnick)
+        # Also change the bot nickname to (runtime) settings, to prevent auto nick name recovery
+        global irc_settings
+        irc_settings["bot_name"] = new_botnick
+
+    def try_to_get_original_nickname(self):
+        """ The bot tries to use the originally set nickname again (which might have been lost on reconnect etc..) """        
+        cnick = self.connection.get_nickname()
+        if cnick != irc_settings["bot_nickname"]:
+            newnick = irc_settings["bot_nickname"]
+            self.connection.nick(newnick)
+
+    def keep_set_nick_loop(self):
+        """ self-repeating loop that keeps checking the bot's irc nickname, and tries to change back to the original nick name if it has changed """   
+        # Try to recover the original nickname
+        self.try_to_get_original_nickname()   
+        # Check again in 10 seconds  
+        timers.add_timer("recover_botname", 10, self.keep_set_nick_loop)        
       
+    def ignore_user_joinsquits(self, irc_channel, user_to_ignore):
+        """ if there is a known IRC-user causing join/part/quit -spam on the channel, you can set the nicknames with this function to ignore 
+            that spam for Discord """
+        self.ignore_parts_joints += f"{user_to_ignore} "
+        self.send_irc_and_discord(irc_channel, f"Ignoring IRC-user {user_to_ignore} for JOINS/PARTS/QUITS from now on.")
+
     ############################################
     #        TOPIC UTILITIES                   # 
     ############################################
@@ -904,6 +934,11 @@ class IRC:
         discord_chan = self.irc_channel_sets[event.target]["real_chan"]
         self.last_used_channel = discord_chan
 
+        # check for ignored user event
+        splitIgnores = self.ignore_parts_joints.split()
+        if event.source.nick in splitIgnores:
+            return # do not inform forwards
+        
         # Someone joining IRC channel
         if connection_name != event.source.nick:
             if event.target not in self.irc_channels_lists:
@@ -949,6 +984,11 @@ class IRC:
             return
         if connection != self.connection:
             return
+
+        # check for ignored user event
+        splitIgnores = self.ignore_parts_joints.split()
+        if event.source.nick in splitIgnores:
+            return # do not inform forwards
         
         discord_chan = self.irc_channel_sets[event.target]["real_chan"]
         if connection.get_nickname() != event.source.nick:
@@ -972,6 +1012,11 @@ class IRC:
             reason = str(event.arguments[0])
         else:
             reason = "no reason"
+
+        # check for ignored user event
+        splitIgnores = self.ignore_parts_joints.split()
+        if event.source.nick in splitIgnores:
+            return # do not inform forwards
 
         self.send_to_matching_discord(event.source.nick, f'**{event.source.nick} {self.get_word("quit_irc")} / {self.network} ({self.get_word("reason")}: {reason})**')
         self.pop_from_channels(event.source.nick)
@@ -1185,8 +1230,18 @@ class IRC:
 
         # Allowed only if the sender is actually authorized as bot_owner in settings
         if sender in irc_settings["bot_owner"]:
+
+            # Bridge Shutdown command -  Quits IRC, kills Discord bot, stops process.
             if cmd == "!sammu" or cmd == "!shutdown":
                 self.bridgeShutdown(message)
+
+            # Bot irc-nickname change
+            if cmd == "!nick" and len(message) == 2:
+                self.change_bot_ircnick(message[1])
+            
+            # Add given IRC-user to ignore join/part/quit -list
+            elif cmd == "!ignorequits" and len(message) == 2:
+                self.ignore_user_joinsquits(event.target, message[1])
 
         ###############################
         #   Public commands block     #
@@ -1338,6 +1393,9 @@ class IRC:
         self.disconnectretries = 0
         # Start the Discord Status rotation -loop
         self.discord.set_status()
+
+        # Start bot irc-nick keeping/guarding:
+        timers.add_timer("keep-botnick", 10, self.keep_set_nick_loop)
 
         # Done with listening the connection - remove all raw message -handler
         ## connection.remove_global_handler("all_raw_messages", on_all_raw)

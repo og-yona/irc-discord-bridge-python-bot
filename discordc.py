@@ -704,6 +704,14 @@ async def on_message(message):
         if cmd == "!sammu" or cmd == "!shutdown":
             irc.bridgeShutdown(contentsplit)
 
+        # Bot irc nickname change
+        if cmd == "!nick" and len(contentsplit) == 2:
+            irc.change_bot_ircnick(contentsplit[1])
+            
+        # Add given IRC-user to ignore join/part/quit -list
+        elif cmd == "!ignorequits" and len(contentsplit) == 2:
+            irc.ignore_user_joinsquits(irc_chan, contentsplit[1])
+
     #==================================
     # Public commands block
     
