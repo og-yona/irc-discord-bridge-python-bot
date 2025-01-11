@@ -25,15 +25,15 @@
 ## Installation - Discord Bot Creation - Running
 
 1. Clone/Download this repository and configure 'settings.json' with your IRC & Discord settings
-	- *'settings.json' has comments and descriptions of settings marked with "_c#"*
-	- Important settings for IRC: server/port/bot_nickname/bot_owner
-	- Important settings for Discord: token/server/bot_owner
-	- Channel Sets ('channel_sets') - use the numerical Discord channel ID as the key, and for values set the related Discord webhook and the matching IRC-channel
+    - *'settings.json' has comments and descriptions of settings marked with "_c#"*
+    - Important settings for IRC: server/port/bot_nickname/bot_owner
+    - Important settings for Discord: token/server/bot_owner
+    - Channel Sets ('channel_sets') - use the numerical Discord channel ID as the key, and for values set the related Discord webhook and the matching IRC-channel
 
 2. Add a new application and bot user to your Discord account (on the [Discord Developer Portal](https://discord.com/developers/applications)) -  then invite your bot to a server you manage with invite link *(!Note! The &permissions=3072 is important to allow your bot to see the channels and send messages.)* :
 
 https://discordapp.com/oauth2/authorize?client_id=CLIENT_ID&scope=bot&permissions=3072
-- (Replace 'CLIENT_ID' with your application's client_id - The above invitation link will invite open up a Discord page, allowing you to invite the bot to servers you manage, and with the invite gives bot permission to view channel messages and post messages on the server you are inviting the bot to.)
+- (Replace *'CLIENT_ID'* with your application's client_id - The above invitation link will open up a Discord page, allowing you to invite the bot to servers you manage - and with the invite gives bot permission to view channel messages and post messages on the server you are inviting the bot to.)
 
 3. Run the bot with 'python3 main.py' *(preferably inside a screen of course)*
 
@@ -58,7 +58,9 @@ A lot of the core code and main ideas are "borrowed" from the following two repo
     - Set up a channel specific webhook for more clean experience
         - *With empty hook - the messages are simply "spoken" through the Discord bot with IRC-nickname as prefix to message.*
     - You may edit/add/delete channel sets from 'settings.json' (once you're done you need to restart the bot for the changes to take effect.)
-- Uses *(can use)* webhooks to spoof IRC nicks as Discord "users" (bot/app tag next to their name, all webhooks have it.)
+- Uses *(can use)* webhooks to spoof IRC nicks as Discord "users"
+    - Messages from IRC can be sent to Discord through a webhook, making them look almost like real Discord Users (with a bot tag). 
+    - With no webhook given - messages will be relayed directly through the bot
 - Bot ops for both IRC and Discord that can use moderation/maintainance commands.
 - IRC users can mention Discord users by including @DiscordNickname in the IRC-messages.
 - But Block/Filter out the @everyone and @here
@@ -70,13 +72,11 @@ A lot of the core code and main ideas are "borrowed" from the following two repo
     - !topic - When typed from IRC, prints the Discord channel topic to IRC - and when typed from Discord, prints out the IRC channel topic to Discord
     - !status - Will print out the current bot/bridge uptime
     - !info - Will print out general info about messages being relayed and how to mention discord users from IRC
-	- !btc - Fetches the current BTC/USD -value from CoinMarketCap and prints it out to linked IRC and Discord channels
-	- !value <symbol> - Fetches the current STOCK/USD -value of stock symbol from finance.yahoo.com and prints it out to linked IRC and Discord channels
-	- !ignorequits <ircuser> - if there is a IRC-user with unstable connection causing spam on Discord, you can ignore this user for the JOINS/PARTS/QUITS with this command. (currently only saved for runtime)
-    - !shutdown to kill the bot. (only for botops) (works on IRC too)  
-        - On 'clean' shutdown, the runtime-settings, such as used language and ignored IRC-quit -users are saved to settings.json, so they will be loaded on next time the bot runs.
-- Messages from IRC can be sent to Discord through a webhook, making them look almost like real Discord Users (with a bot tag). 
-    - With no webhook given - messages will be relayed directly through the bot
+    - !btc - Fetches the current BTC/USD -value from CoinMarketCap and prints it out to linked IRC and Discord channels
+    - !value [stocksymbol] - Fetches the current STOCK/USD -value of stock symbol from finance.yahoo.com and prints it out to linked IRC and Discord channels
+    - !ignorequits [ircuser] - if there is a IRC-user with unstable connection causing spam on Discord, you can ignore this user for the JOINS/PARTS/QUITS with this command.
+    - !shutdown to kill the bot. (only for botops) (works on IRC too)
+    - On 'clean' shutdown, the runtime-settings, such as used language and ignored IRC-part/quit/join-users are saved to settings.json, so they will be loaded on next time the bot runs.
 - Additional Quality of Life features for IRC:
     - Check messages for URLs, and if found, parse and report to IRC:
         - The webpage title (if available)
