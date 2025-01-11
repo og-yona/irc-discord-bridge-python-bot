@@ -66,6 +66,8 @@ class Discord:
         self.sendmymsg_lastcall = 0
         self.sendmymsg_delay = 0
         self.last_used_channel = ""
+        self.connected_to_discord = 0
+        self.temp_status_message = ""
 
         # Init logger & Create a FileHandler for logging to a file
         self.discord_logger = logging.getLogger('discordc')
@@ -136,7 +138,10 @@ class Discord:
 
         if sender:
             ircUserStatuses = irc.get_irc_user_statuses()
-            statusPrefix = ircUserStatuses[sender]
+            if sender in ircUserStatuses:
+                statusPrefix = ircUserStatuses[sender]
+            else:
+                statusPrefix = ""
             ircDisplayname = f"{settings['irc']['ircNickPrefix']}{statusPrefix}{sender}{settings['irc']['ircNickPostfix']}"
         else:
             ircDisplayname = "[IRC]" # Bot messages through webhook
@@ -255,8 +260,23 @@ class Discord:
         global thread_lock
         thread_lock = lock
 
-    def set_status(self):
-        """ A self -advancing and repeating loop/routine to change between given bot-settings["status_messages"] in Discord """
+    def set_status(self, statusmsg=""):
+        """ A self -advancing and repeating loop/routine to change between given bot-settings["status_messages"] in Discord 
+        - If custom status message is given, displays that in Discord AND STOPS LOOPING the default statuses """
+        
+        # If discord is not yet connected, save the temp-status message
+        if self.connected_to_discord == 0:
+            self.temp_status_message = statusmsg
+            return
+
+        if statusmsg != "": # Set Custom status
+            asyncio.run_coroutine_threadsafe(set_status_async(statusmsg, 5), discord_bot.loop)
+            # Stop looping statuses if manual status is set
+            if "set_status" in timers.timers:
+                timers.cancel_timer("set_status")
+            return
+
+        # Or loop through settings.json -statuses with "Listening to..."
         c_status = settings["status_messages"][self.statusindex]
         asyncio.run_coroutine_threadsafe(set_status_async(c_status), discord_bot.loop)
         if self.statusindex < len(settings["status_messages"])-1:
@@ -428,9 +448,29 @@ async def del_my_message_async(msg_object):
     """ Async Delete my message from discord """
     await msg_object.delete()
 
-async def set_status_async(status):
-    """ Async Set the discord bot status """
-    await discord_bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=status))
+async def set_status_async(status, activityType=2):
+    """ Async Set the discord bot status
+    - activityType = 0 = playing
+    - activityType = 1 = streaming
+    - activityType = 2 = listening
+    - activityType = 3 = watching
+    - activityType = 4 = custom
+    - activityType = 5 = competing
+    - !NOTE! Bots are not allowed to use the '4'-Custom type !
+    """
+    activity_type = discord.ActivityType.listening
+    if activityType != 2:
+        if activityType == 0:
+            activity_type = discord.ActivityType.playing
+        if activityType == 1:
+            activity_type = discord.ActivityType.streaming
+        if activityType == 3:
+            activity_type = discord.ActivityType.watching
+        if activityType == 4:
+            activity_type = discord.ActivityType.custom
+        if activityType == 5:
+            activity_type = discord.ActivityType.competing
+    await discord_bot.change_presence(activity=discord.Activity(type=activity_type, name=status))
 
 async def shutdown_async():
     """ Async shutdown discord bot """
@@ -702,7 +742,7 @@ async def on_message(message):
 
         # Bridge Shutdown command -  Quits IRC, kills Discord bot, stops process.
         if cmd == "!sammu" or cmd == "!shutdown":
-            irc.bridgeShutdown(contentsplit)
+            irc.bridge_shutdown(contentsplit)
 
         # Bot irc nickname change
         if cmd == "!nick" and len(contentsplit) == 2:
@@ -878,3 +918,7 @@ async def on_ready():
 
         # Discord initialization ok
         print("[Discord] DISCORD READY")
+        discordc.connected_to_discord = 1
+        if discordc.temp_status_message != "":
+            discordc.set_status(discordc.temp_status_message)
+

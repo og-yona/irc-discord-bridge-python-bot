@@ -60,8 +60,6 @@ class IRC:
         # set configurations from the settings
         self.is_running = 0
 
-        self.ignore_parts_joints = ""
-
         ## ! See the settings.json "comments" - for details concerning the settings !
         self.nick = irc_settings["bot_nickname"]
         self.server = irc_settings["server"]
@@ -124,10 +122,11 @@ class IRC:
                 irc_retries -= 1
 
         # IRC-bots event handling -loop
+        loop_process_time = 0.01 # 0.2 original -> 0.1, but fast messages not beying relayed still (?)
         while self.is_running:
             try:
-                self.reactor.process_once(0.1)
-                time.sleep(0.1)
+                self.reactor.process_once(loop_process_time)
+                time.sleep(loop_process_time)
             except Exception as e:
                 self.on_error(f"Caught an error : {e}")
 
@@ -137,7 +136,8 @@ class IRC:
         - Connect - and Retry connecting if it fails - to the IRC-server
         - Add IRC-event message handlers
         """
-        self.debugPrint("[IRC] Connecting to irc server ...")        
+        self.debugPrint("[IRC] Connecting to irc server ...")
+        self.discord.set_status("Connecting to IRC...")
         try:
             c = self.connection.connect(self.server, self.port, self.nick, None, self.bot_hostname, self.bot_realname)
             # With successfull connection - add all callbacks
@@ -181,24 +181,30 @@ class IRC:
             self.connect() # retry
             return
         
-    def bridgeShutdown(self, message):
+    def bridge_shutdown(self, message):
         """ 
         # Call function for shutting down the whole bot/bridge -process 
         - First notify the linked IRC & Discord channels about shutdown
         - Then shutdown the bots & connections properly
         """
+        self.discord.set_status("Shutting down Bridge")
+
+        # announce the shutdown
         uptime = self.get_uptime()
         reason = ""
         if len(message) > 1:
-            reason = " ".join(message[1:])           
-
+            reason = " ".join(message[1:])
         if reason == "":
             shutdownMessage = f'** !! {self.get_word("shutdownmessage")} {uptime} !! **'
         else:
             shutdownMessage = f'** !! {self.get_word("shutdownmessage")} {uptime} *({reason})* !! **'
-
         self.discord.send_to_all_discord_channels(shutdownMessage)
         self.send_to_all_irc_channels(shutdownMessage)
+
+        # save current runtime settings AFTER Announcement - as we unload the discord channels before saving settings
+        self.save_settings_to_json()
+        
+        # shutdown
         time.sleep(2)
         self.discord.shutdown(reason)
 
@@ -486,8 +492,28 @@ class IRC:
     def ignore_user_joinsquits(self, irc_channel, user_to_ignore):
         """ if there is a known IRC-user causing join/part/quit -spam on the channel, you can set the nicknames with this function to ignore 
             that spam for Discord """
-        self.ignore_parts_joints += f"{user_to_ignore} "
+        if user_to_ignore in irc_settings["ignore_parts_joins"]:
+            self.send_irc_and_discord(irc_channel, f"User {user_to_ignore} was already on ignore list for JOINS/PARTS/QUITS.")
+            return # user was already on ignore
+
+        # Add ignore and announce
+        irc_settings["ignore_parts_joins"].append(user_to_ignore)
         self.send_irc_and_discord(irc_channel, f"Ignoring IRC-user {user_to_ignore} for JOINS/PARTS/QUITS from now on.")
+
+    def save_settings_to_json(self):
+        """ # Save settings to JSON
+        - Saves the current runtime-settings to the settings.json:
+        -- Language, IgnoreQuits, ?
+        - Allows saved settings to be loaded next time bot runs """
+        import json
+
+        # Remove / unload the Discord channels
+        for channel in settings["channel_sets"]:
+            settings["channel_sets"][channel].pop("real_chan")
+
+        # Save settings to JSON
+        with open("settings.json", "w", encoding="utf-8") as outfile:
+            json.dump(settings, outfile, ensure_ascii=False, indent=4)
 
     ############################################
     #        TOPIC UTILITIES                   # 
@@ -935,8 +961,7 @@ class IRC:
         self.last_used_channel = discord_chan
 
         # check for ignored user event
-        splitIgnores = self.ignore_parts_joints.split()
-        if event.source.nick in splitIgnores:
+        if event.source.nick in irc_settings["ignore_parts_joins"]:
             return # do not inform forwards
         
         # Someone joining IRC channel
@@ -986,8 +1011,7 @@ class IRC:
             return
 
         # check for ignored user event
-        splitIgnores = self.ignore_parts_joints.split()
-        if event.source.nick in splitIgnores:
+        if event.source.nick in irc_settings["ignore_parts_joins"]:
             return # do not inform forwards
         
         discord_chan = self.irc_channel_sets[event.target]["real_chan"]
@@ -1014,8 +1038,7 @@ class IRC:
             reason = "no reason"
 
         # check for ignored user event
-        splitIgnores = self.ignore_parts_joints.split()
-        if event.source.nick in splitIgnores:
+        if event.source.nick in irc_settings["ignore_parts_joins"]:
             return # do not inform forwards
 
         self.send_to_matching_discord(event.source.nick, f'**{event.source.nick} {self.get_word("quit_irc")} / {self.network} ({self.get_word("reason")}: {reason})**')
@@ -1233,7 +1256,7 @@ class IRC:
 
             # Bridge Shutdown command -  Quits IRC, kills Discord bot, stops process.
             if cmd == "!sammu" or cmd == "!shutdown":
-                self.bridgeShutdown(message)
+                self.bridge_shutdown(message)
 
             # Bot irc-nickname change
             if cmd == "!nick" and len(message) == 2:
@@ -1413,7 +1436,8 @@ class IRC:
         - Try to reconnect back to the server (default max 10 times)
         """
         connection_name = connection.get_nickname()
-        
+        self.discord.set_status("Lost IRC-connection.")
+
         # retry connection self.maxConnectRetries times
         if connection == self.connection:
             if connection.sent_quit == 1:

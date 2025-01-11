@@ -8,9 +8,16 @@
         "bot_nickname": "botsircname",
         "bot_hostname": "botsname",
         "bot_realname": "bots real name for irc",
-        "bot_owner": ["your_irc_nick", "your_second_nick_or_friend"],
+        "bot_owner": [
+            "your_irc_nick",
+            "your_second_nick_or_friend"
+        ],
         "ircNickPrefix": "<",
-        "ircNickPostfix": ">"
+        "ircNickPostfix": ">",
+        "ignore_parts_joins": [
+            "ircUserWithBadConnection",
+            "ircUserWithBadConnection2"
+        ]
     },
     "_c03": "// ..DISCORD bot-token and server settings under the 'discord'-tag ",
     "_c04": "// With base ircNickPre &-Post-fix: ",
@@ -19,7 +26,10 @@
     "discord": {
         "token": "INSERT_YOUR_DISCORD_BOT_TOKEN_HERE",
         "server": "insert_the_numerical_discord_server_ID_here",
-        "bot_owner": ["your_discord_user_ID","other_bot_owner_discord_ID"],
+        "bot_owner": [
+            "your_discord_user_ID",
+            "other_bot_owner_discord_ID"
+        ],
         "relayTagUsed": "[R] ",
         "relayNickPrefix": "<",
         "relayNickPostfix": ">"
@@ -43,14 +53,14 @@
 		"sounds of Discord"
     ],
     "_c12": "// Language / Bot word lists - Use for localizing your bot",
-    "localization" : {
-        "used_language" : "en",
+    "localization": {
+        "used_language": "en",
         "_c120": "// ======================================================================",
         "_c121": "// UNLESS YOU WANT TO MODIFY THE LANGUAGES / BOT PHRASES",
         "_c122": "// You dont need to care about any of the phrases/things below here.",
         "_c123": "// ======================================================================",
-        "_c13":"// IF a new language is added/declared - ALL Words need to be defined, or missing words will result in exceptions in bot-program!",
-        "en" : {
+        "_c13": "// IF a new language is added/declared - ALL Words need to be defined, or missing words will result in exceptions in bot-program!",
+        "en": {
             "shutdownmessage": "Discord-IRC -Bridge shutting down after uptime of :",
             "quitmessage": "Discord-IRC -bridge has shut down after uptime of :",
             "available_languages": "Available languages are :",
@@ -67,8 +77,8 @@
             "quit_irc": "has left IRC",
             "kicked_user": "has kicked user",
             "new_nick_is": "new nickname is",
-            "joined":"joined",
-            "pinned_message":"pinned a message",
+            "joined": "joined",
+            "pinned_message": "pinned a message",
             "invalid_command_param": "Invalid parameter. Try '!help'.",
             "webhook_problem_message": "Problem with set webhook - relaying the IRC message through bot instead",
             "bridge": "bridge",
@@ -87,25 +97,25 @@
             "second_short": "s",
             "_c14": "// List of available commands and help strings / texts used with bot and/or related to the commands",
             "help_dict": {
-                "listcommands":"Commands: `!help, !info  !status, !who !topic (& !shutdown)` `!help [!command]` : gives additional info (for example. `!help !help` - will give more details about the bot)",
-                "!apua":"`!apua` - Lists the known bot commands. Messages from linked channels are relayed both ways. You can mention discord users from IRC by @discordnick.",
-                "!apuva":"`!apuva` - Lists the known bot commands. Messages from linked channels are relayed both ways. You can mention discord users from IRC by @discordnick.",
-                "!help":"`!help` - Lists the known bot commands. Messages from linked channels are relayed both ways. You can mention discord users from IRC by @discordnick.",
-                "!info":"`!info` - Messages from linked channels are relayed both ways. You can mention discord users from IRC by @discordnick.",
-                "!ketä":"`!ketä` - When queried from IRC, relays Discord users statuses to IRC. Or if queried from Discord, relay the linked IRC channel users who are around.",
-                "!kuka":"`!kuka` - When queried from IRC, relays Discord users statuses to IRC. Or if queried from Discord, relay the linked IRC channel users who are around.",
-                "!who":"`!who` - When queried from IRC, relays Discord users statuses to IRC. Or if queried from Discord, relay the linked IRC channel users who are around.",
-                "!topic":"`!topic` - When queried from IRC, relays Discord channel topic to IRC. Or if queried from Discord, relay the linked IRC channel topic to Discord.",
-                "!tila":"`!tila` - Returns the bot/bridge uptime.",
-                "!status":"`!status` - Returns the bot/bridge uptime.",
-                "!speak":"`!speak [language]` - Change the language that bot is using.",
-                "!puhu":"`!puhu [language]` - Change the language that bot is using.",
-                "!viännä":"`!viännä [language]` - Change the language that bot is using.",
-                "!sammu":"`!sammu [reason]` \n (limited for bot-operators) \n * Stop the bot in Discord and IRC and kill the bot-process. \n (Reason is optional, if given, it will be announced on all bot-channels before shutdown.)",
-                "!shutdown":"`!shutdown [reason]` \n (limited for bot-operators) \n * Stop the bot in Discord and IRC and kill the bot-process. \n (Reason is optional, if given, it will be announced on all bot-channels before shutdown.)"
-                }
+                "listcommands": "Commands: `!help, !info  !status, !who !topic (& !shutdown)` `!help [!command]` : gives additional info (for example. `!help !help` - will give more details about the bot)",
+                "!apua": "`!apua` - Lists the known bot commands. Messages from linked channels are relayed both ways. You can mention discord users from IRC by @discordnick.",
+                "!apuva": "`!apuva` - Lists the known bot commands. Messages from linked channels are relayed both ways. You can mention discord users from IRC by @discordnick.",
+                "!help": "`!help` - Lists the known bot commands. Messages from linked channels are relayed both ways. You can mention discord users from IRC by @discordnick.",
+                "!info": "`!info` - Messages from linked channels are relayed both ways. You can mention discord users from IRC by @discordnick.",
+                "!ketä": "`!ketä` - When queried from IRC, relays Discord users statuses to IRC. Or if queried from Discord, relay the linked IRC channel users who are around.",
+                "!kuka": "`!kuka` - When queried from IRC, relays Discord users statuses to IRC. Or if queried from Discord, relay the linked IRC channel users who are around.",
+                "!who": "`!who` - When queried from IRC, relays Discord users statuses to IRC. Or if queried from Discord, relay the linked IRC channel users who are around.",
+                "!topic": "`!topic` - When queried from IRC, relays Discord channel topic to IRC. Or if queried from Discord, relay the linked IRC channel topic to Discord.",
+                "!tila": "`!tila` - Returns the bot/bridge uptime.",
+                "!status": "`!status` - Returns the bot/bridge uptime.",
+                "!speak": "`!speak [language]` - Change the language that bot is using.",
+                "!puhu": "`!puhu [language]` - Change the language that bot is using.",
+                "!viännä": "`!viännä [language]` - Change the language that bot is using.",
+                "!sammu": "`!sammu [reason]` \n (limited for bot-operators) \n * Stop the bot in Discord and IRC and kill the bot-process. \n (Reason is optional, if given, it will be announced on all bot-channels before shutdown.)",
+                "!shutdown": "`!shutdown [reason]` \n (limited for bot-operators) \n * Stop the bot in Discord and IRC and kill the bot-process. \n (Reason is optional, if given, it will be announced on all bot-channels before shutdown.)"
+            }
         },
-        "sawwoo" : {
+        "sawwoo": {
             "shutdownmessage": "Discord-IRC -silta ompi sammumassa oltunansa piällä jota kuinniin",
             "quitmessage": "IRC-Discord -silta sammui oltunansa piällä jota kuinniin",
             "available_languages": "Suatavilla olevat puhheen parret ovat seuraavanlaeset :",
@@ -122,8 +132,8 @@
             "quit_irc": "taes suuttuva, ja läks pois irkistä..",
             "kicked_user": "kurmotti saunan tuakse",
             "new_nick_is": "uus kuhtumanimi ompi",
-            "joined":"hyppäs mukkaan pulinoihin",
-            "pinned_message":"luikautti viestin seinälle",
+            "joined": "hyppäs mukkaan pulinoihin",
+            "pinned_message": "luikautti viestin seinälle",
             "invalid_command_param": "Wammanen lisäke. Koetappa waekka'!apuva' tai '!apuva !apuva'",
             "webhook_problem_message": "WebHook-wiheläisyys, wiesti wälitetään botin kautta",
             "bridge": "silta",
@@ -141,25 +151,25 @@
             "minute_short": "m",
             "second_short": "s",
             "help_dict": {
-                "listcommands":"Komennot: !apua (!apuva !help), !info,  !tila (!status), !ketä (!kuka), !topic (& !shutdown/!sammu) / `!apua [!komento]` : antaa lisää tietoja (esim. `!apua !apua` - lisää tietoa botista)",
-                "!apua":"`!apua` - Listaa tunnetut botti-komennot. Muuta tietoa botista; Viestit välitetään IRC-kanavalta Discordiin ja päin vastoin. Jos IRCistä haluaa 'pingata' Discord-käyttäjää, niin se onnistuu @discordnimi kirjoittamalla IRCissä.",
-                "!apuva":"`!apuva` - Listaa tunnetut botti-komennot. Muuta tietoa botista; Viestit välitetään IRC-kanavalta Discordiin ja päin vastoin. Jos IRCistä haluaa 'pingata' Discord-käyttäjää, niin se onnistuu @discordnimi kirjoittamalla IRCissä.",
-                "!help":"`!help` - Listaa tunnetut botti-komennot. Muuta tietoa botista; Viestit välitetään IRC-kanavalta Discordiin ja päin vastoin. Jos IRCistä haluaa 'pingata' Discord-käyttäjää, niin se onnistuu @discordnimi kirjoittamalla IRCissä.",
-                "!info":"`!info` - Viestit välitetään IRC-kanavalta Discordiin ja toisin päin. Jos IRCistä haluaa 'pingata' Discord-käyttäjää, niin se onnistuu @discordnimi kirjoittamalla IRCissä.",
-                "!ketä":"`!ketä` - IRCistä kirjoitettuna listaa Discord käyttäjät/online-tilanteet - Discordista kirjoitettuna listaa paikalla olevat IRC-käyttäjät",
-                "!kuka":"`!kuka` - IRCistä kirjoitettuna listaa Discord käyttäjät/online-tilanteet - Discordista kirjoitettuna listaa paikalla olevat IRC-käyttäjät",
-                "!who":"`!who` - IRCistä kirjoitettuna listaa Discord käyttäjät/online-tilanteet - Discordista kirjoitettuna listaa paikalla olevat IRC-käyttäjät",
-                "!topic":"`!topic` - Palauttaa irkistä kirjoitettuna Discord-topicin, ja Discordista kirjoitettuna IRC-topicin",
-                "!tila":"`!tila` - Palauttaa sillan päälläoloajan / nykyisen tilan (?)",
-                "!status":"`!status` - Palauttaa sillan päälläoloajan / nykyisen tilan (?)",
-                "!speak":"`!speak [kieli]` - Vaihtaa kielen jota botti puhuu",
-                "!puhu":"`!puhu [kieli]` - Vaihtaa kielen jota botti puhuu",
-                "!viännä":"`!viännä [kieli]` - Vaehtaapi kielen jota botti puhhuu",
-                "!sammu":"`!sammu [syy]` \n (Rajoitettu botti-operaattoreille) \n * Pysäyttää botin sekä Discordissa että IRCissä ja sammuttaa prosessin. \n (Syy on vaillinainen, jos annettu, se kerrotaan sammutettaessa sekä IRCciin että Discordiin kaikille yhdistetyille kanaville.)",
-                "!shutdown":"`!shutdown [syy]` \n (Rajoitettu botti-operaattoreille) \n * Pysäyttää botin sekä Discordissa että IRCissä ja sammuttaa prosessin. \n (Syy on vaillinainen, jos annettu, se kerrotaan sammutettaessa sekä IRCciin että Discordiin kaikille yhdistetyille kanaville.)"
-                }
+                "listcommands": "Komennot: !apua (!apuva !help), !info,  !tila (!status), !ketä (!kuka), !topic (& !shutdown/!sammu) / `!apua [!komento]` : antaa lisää tietoja (esim. `!apua !apua` - lisää tietoa botista)",
+                "!apua": "`!apua` - Listaa tunnetut botti-komennot. Muuta tietoa botista; Viestit välitetään IRC-kanavalta Discordiin ja päin vastoin. Jos IRCistä haluaa 'pingata' Discord-käyttäjää, niin se onnistuu @discordnimi kirjoittamalla IRCissä.",
+                "!apuva": "`!apuva` - Listaa tunnetut botti-komennot. Muuta tietoa botista; Viestit välitetään IRC-kanavalta Discordiin ja päin vastoin. Jos IRCistä haluaa 'pingata' Discord-käyttäjää, niin se onnistuu @discordnimi kirjoittamalla IRCissä.",
+                "!help": "`!help` - Listaa tunnetut botti-komennot. Muuta tietoa botista; Viestit välitetään IRC-kanavalta Discordiin ja päin vastoin. Jos IRCistä haluaa 'pingata' Discord-käyttäjää, niin se onnistuu @discordnimi kirjoittamalla IRCissä.",
+                "!info": "`!info` - Viestit välitetään IRC-kanavalta Discordiin ja toisin päin. Jos IRCistä haluaa 'pingata' Discord-käyttäjää, niin se onnistuu @discordnimi kirjoittamalla IRCissä.",
+                "!ketä": "`!ketä` - IRCistä kirjoitettuna listaa Discord käyttäjät/online-tilanteet - Discordista kirjoitettuna listaa paikalla olevat IRC-käyttäjät",
+                "!kuka": "`!kuka` - IRCistä kirjoitettuna listaa Discord käyttäjät/online-tilanteet - Discordista kirjoitettuna listaa paikalla olevat IRC-käyttäjät",
+                "!who": "`!who` - IRCistä kirjoitettuna listaa Discord käyttäjät/online-tilanteet - Discordista kirjoitettuna listaa paikalla olevat IRC-käyttäjät",
+                "!topic": "`!topic` - Palauttaa irkistä kirjoitettuna Discord-topicin, ja Discordista kirjoitettuna IRC-topicin",
+                "!tila": "`!tila` - Palauttaa sillan päälläoloajan / nykyisen tilan (?)",
+                "!status": "`!status` - Palauttaa sillan päälläoloajan / nykyisen tilan (?)",
+                "!speak": "`!speak [kieli]` - Vaehtaap kielen jota botti mulujauttelloo",
+                "!puhu": "`!puhu [kieli]` - Vaehtaap kielen jota botti mulujauttelloo",
+                "!viännä": "`!viännä [kieli]` - Vaehtaapi kielen jota botti mulujauttelloo",
+                "!sammu": "`!sammu [syy]` \n (Rajoitettu botti-operaattoreille) \n * Pysäyttää botin sekä Discordissa että IRCissä ja sammuttaa prosessin. \n (Syy on vaillinainen, jos annettu, se kerrotaan sammutettaessa sekä IRCciin että Discordiin kaikille yhdistetyille kanaville.)",
+                "!shutdown": "`!shutdown [syy]` \n (Rajoitettu botti-operaattoreille) \n * Pysäyttää botin sekä Discordissa että IRCissä ja sammuttaa prosessin. \n (Syy on vaillinainen, jos annettu, se kerrotaan sammutettaessa sekä IRCciin että Discordiin kaikille yhdistetyille kanaville.)"
+            }
         },
-        "fi" : {
+        "fi": {
             "shutdownmessage": "Discord-IRC -silta sammuu oltuaan päällä",
             "quitmessage": "IRC-Discord -silta sammui oltuaan päällä",
             "available_languages": "Saatavilla olevat kielet :",
@@ -176,8 +186,8 @@
             "quit_irc": "poistui IRCistä",
             "kicked_user": "potkaisi käyttäjän",
             "new_nick_is": "uusi nimi on",
-            "joined":"liittyi",
-            "pinned_message":"kiinnitti viestin",
+            "joined": "liittyi",
+            "pinned_message": "kiinnitti viestin",
             "invalid_command_param": "Tuntematon lisäkomento. Koita '!apua' tai '!apua !apua'",
             "webhook_problem_message": "WebHook-ongelma, viesti välitetään botin kautta",
             "bridge": "silta",
@@ -195,23 +205,23 @@
             "minute_short": "m",
             "second_short": "s",
             "help_dict": {
-                "listcommands":"Komennot: !apua (!apuva !help), !info,  !tila (!status), !ketä (!kuka), !topic (& !shutdown/!sammu) / `!apua [!komento]` : antaa lisää tietoja (esim. `!apua !apua` - lisää tietoa botista)",
-                "!apua":"`!apua` - Listaa tunnetut botti-komennot. Muuta tietoa botista; Viestit välitetään IRC-kanavalta Discordiin ja päin vastoin. Jos IRCistä haluaa 'pingata' Discord-käyttäjää, niin se onnistuu @discordnimi kirjoittamalla IRCissä.",
-                "!apuva":"`!apuva` - Listaa tunnetut botti-komennot. Muuta tietoa botista; Viestit välitetään IRC-kanavalta Discordiin ja päin vastoin. Jos IRCistä haluaa 'pingata' Discord-käyttäjää, niin se onnistuu @discordnimi kirjoittamalla IRCissä.",
-                "!help":"`!help` - Listaa tunnetut botti-komennot. Muuta tietoa botista; Viestit välitetään IRC-kanavalta Discordiin ja päin vastoin. Jos IRCistä haluaa 'pingata' Discord-käyttäjää, niin se onnistuu @discordnimi kirjoittamalla IRCissä.",
-                "!info":"`!info` - Viestit välitetään IRC-kanavalta Discordiin ja toisin päin. Jos IRCistä haluaa 'pingata' Discord-käyttäjää, niin se onnistuu @discordnimi kirjoittamalla IRCissä.",
-                "!ketä":"`!ketä` - IRCistä kirjoitettuna listaa Discord käyttäjät/online-tilanteet - Discordista kirjoitettuna listaa paikalla olevat IRC-käyttäjät",
-                "!kuka":"`!kuka` - IRCistä kirjoitettuna listaa Discord käyttäjät/online-tilanteet - Discordista kirjoitettuna listaa paikalla olevat IRC-käyttäjät",
-                "!who":"`!who` - IRCistä kirjoitettuna listaa Discord käyttäjät/online-tilanteet - Discordista kirjoitettuna listaa paikalla olevat IRC-käyttäjät",
-                "!topic":"`!topic` - Palauttaa irkistä kirjoitettuna Discord-topicin, ja Discordista kirjoitettuna IRC-topicin",
-                "!tila":"`!tila` - Palauttaa sillan päälläoloajan / nykyisen tilan (?)",
-                "!status":"`!status` - Palauttaa sillan päälläoloajan / nykyisen tilan (?)",
-                "!speak":"`!speak [kieli]` - Vaihtaa kielen jota botti puhuu",
-                "!puhu":"`!puhu [kieli]` - Vaihtaa kielen jota botti puhuu",
-                "!viännä":"`!viännä [kieli]` - Vaehtaapi kielen jota botti puhhuu",
-                "!sammu":"`!sammu [syy]` \n (Rajoitettu botti-operaattoreille) \n * Pysäyttää botin sekä Discordissa että IRCissä ja sammuttaa prosessin. \n (Syy on vaillinainen, jos annettu, se kerrotaan sammutettaessa sekä IRCciin että Discordiin kaikille yhdistetyille kanaville.)",
-                "!shutdown":"`!shutdown [syy]` \n (Rajoitettu botti-operaattoreille) \n * Pysäyttää botin sekä Discordissa että IRCissä ja sammuttaa prosessin. \n (Syy on vaillinainen, jos annettu, se kerrotaan sammutettaessa sekä IRCciin että Discordiin kaikille yhdistetyille kanaville.)"
-                }
+                "listcommands": "Komennot: !apua (!apuva !help), !info,  !tila (!status), !ketä (!kuka), !topic (& !shutdown/!sammu) / `!apua [!komento]` : antaa lisää tietoja (esim. `!apua !apua` - lisää tietoa botista)",
+                "!apua": "`!apua` - Listaa tunnetut botti-komennot. Muuta tietoa botista; Viestit välitetään IRC-kanavalta Discordiin ja päin vastoin. Jos IRCistä haluaa 'pingata' Discord-käyttäjää, niin se onnistuu @discordnimi kirjoittamalla IRCissä.",
+                "!apuva": "`!apuva` - Listaa tunnetut botti-komennot. Muuta tietoa botista; Viestit välitetään IRC-kanavalta Discordiin ja päin vastoin. Jos IRCistä haluaa 'pingata' Discord-käyttäjää, niin se onnistuu @discordnimi kirjoittamalla IRCissä.",
+                "!help": "`!help` - Listaa tunnetut botti-komennot. Muuta tietoa botista; Viestit välitetään IRC-kanavalta Discordiin ja päin vastoin. Jos IRCistä haluaa 'pingata' Discord-käyttäjää, niin se onnistuu @discordnimi kirjoittamalla IRCissä.",
+                "!info": "`!info` - Viestit välitetään IRC-kanavalta Discordiin ja toisin päin. Jos IRCistä haluaa 'pingata' Discord-käyttäjää, niin se onnistuu @discordnimi kirjoittamalla IRCissä.",
+                "!ketä": "`!ketä` - IRCistä kirjoitettuna listaa Discord käyttäjät/online-tilanteet - Discordista kirjoitettuna listaa paikalla olevat IRC-käyttäjät",
+                "!kuka": "`!kuka` - IRCistä kirjoitettuna listaa Discord käyttäjät/online-tilanteet - Discordista kirjoitettuna listaa paikalla olevat IRC-käyttäjät",
+                "!who": "`!who` - IRCistä kirjoitettuna listaa Discord käyttäjät/online-tilanteet - Discordista kirjoitettuna listaa paikalla olevat IRC-käyttäjät",
+                "!topic": "`!topic` - Palauttaa irkistä kirjoitettuna Discord-topicin, ja Discordista kirjoitettuna IRC-topicin",
+                "!tila": "`!tila` - Palauttaa sillan päälläoloajan / nykyisen tilan (?)",
+                "!status": "`!status` - Palauttaa sillan päälläoloajan / nykyisen tilan (?)",
+                "!speak": "`!speak [kieli]` - Vaihtaa kielen jota botti puhuu",
+                "!puhu": "`!puhu [kieli]` - Vaihtaa kielen jota botti puhuu",
+                "!viännä": "`!viännä [kieli]` - Vaehtaapi kielen jota botti puhhuu",
+                "!sammu": "`!sammu [syy]` \n (Rajoitettu botti-operaattoreille) \n * Pysäyttää botin sekä Discordissa että IRCissä ja sammuttaa prosessin. \n (Syy on vaillinainen, jos annettu, se kerrotaan sammutettaessa sekä IRCciin että Discordiin kaikille yhdistetyille kanaville.)",
+                "!shutdown": "`!shutdown [syy]` \n (Rajoitettu botti-operaattoreille) \n * Pysäyttää botin sekä Discordissa että IRCissä ja sammuttaa prosessin. \n (Syy on vaillinainen, jos annettu, se kerrotaan sammutettaessa sekä IRCciin että Discordiin kaikille yhdistetyille kanaville.)"
+            }
         }
     }
 }
