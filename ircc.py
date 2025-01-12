@@ -392,10 +392,15 @@ class IRC:
 
     def set_irc_channel_sets(self, sets):
         """ Sets the self.irc_channel_sets -variable from given param (given from Discord bot at initialization) """
+        
         self.irc_channel_sets = {}
         for item in sets:
             value = sets[item]
             self.irc_channel_sets[value["irc_chan"]] = {"discord_chan": item, "webhook": value["webhook"], "real_chan": value["real_chan"]}
+
+        # If IRC-connection is already established when receiving the channels, join to them
+        if self.irc_connection_successfull == True:
+            self.slow_join_to_set_channels()
     
     def pop_from_channels(self, nick):
         """ Removes the given nickname/users from a channel cache """
@@ -1402,6 +1407,23 @@ class IRC:
         # Check if the message cointains URL's - and get the titles and report to IRC
         timers.add_timer("", 1, self.try_to_process_message_urls, finalmsg, event.target)
 
+    def slow_join_to_set_channels(self):
+        """ IRC-bot will join the IRC-channels in currently set channel_sets - given/fulfilled by the Discord
+        - If IRC-connection is faster than Discord, this needs to be called when receiving the channels from Discord """
+
+        channel_join_delay = 0.1
+        # "Slow"-join to channels, with increasing delays
+        if self.thread_lock.locked(): # Called from Discord setup - already locked
+            for irc_channel in self.irc_channel_sets:
+                print(f"[IRC] Joining to {irc_channel} in {channel_join_delay} seconds")
+                timers.add_timer(f"join-{irc_channel}", channel_join_delay, self.connection.join, irc_channel)
+                channel_join_delay += 0.6
+        else: # Default with-lock debug -printing
+            for irc_channel in self.irc_channel_sets:
+                self.debug_print(f"[IRC] Joining to {irc_channel} in {channel_join_delay} seconds")
+                timers.add_timer(f"join-{irc_channel}", channel_join_delay, self.connection.join, irc_channel)
+                channel_join_delay += 0.6
+
     ########################################################
     # Handling of successfull IRC-server connection
     ########################################################
@@ -1422,11 +1444,7 @@ class IRC:
             timers.cancel_timer("self.connection-reconn")
 
         # "Slow"-join to channels, with increasing delays
-        channel_join_delay = 1
-        for irc_channel in self.irc_channel_sets:
-            channel_join_delay += 2
-            self.debug_print(f"[IRC] Joining to {irc_channel} in {channel_join_delay} seconds")
-            timers.add_timer(f"join-{irc_channel}", channel_join_delay, connection.join, irc_channel)
+        self.slow_join_to_set_channels()
 
         # Reset disconnect retries
         self.disconnectretries = 0
