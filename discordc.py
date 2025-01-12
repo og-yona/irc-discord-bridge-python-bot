@@ -150,7 +150,7 @@ class Discord:
             try:
                 response = self.send_through_webhook(webhooklink, message, ircDisplayname)
             except Exception as e:
-                self.debugPrint(f"webhook error: {e}")
+                debugPrint(f"webhook error: {e}")
                 self.send_discord_message(discord_chan, f'```{irc.get_word("webhook_problem_message")}```')
                 self.send_discord_message(discord_chan, f'**[IRC]** {ircDisplayname} {message}')
         # Or simply relay the message through the bot itself
