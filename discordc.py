@@ -585,7 +585,7 @@ async def on_reaction_add(reaction, user):
         
         # Get the original message & details
         msg = reaction.message
-        content = msg.content
+        content = msg.clean_content
         author = msg.author
 
         # Update last used channels
