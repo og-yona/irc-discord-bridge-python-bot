@@ -30,19 +30,20 @@
     - Important settings for Discord: token/server/bot_owner
     - Channel Sets ('channel_sets') - use the numerical Discord channel ID as the key, and for values set the related Discord webhook and the matching IRC-channel
 
-2. Add a new application and bot user to your Discord account (on the [Discord Developer Portal](https://discord.com/developers/applications)) -  then invite your bot to a server you manage with invite link *(!Note! The &permissions=3072 is important to allow your bot to see the channels and send messages.)* :
-
-https://discordapp.com/oauth2/authorize?client_id=CLIENT_ID&scope=bot&permissions=3072
-- (Replace *'CLIENT_ID'* with your application's client_id - The above invitation link will open up a Discord page, allowing you to invite the bot to servers you manage - and with the invite gives bot permission to view channel messages and post messages on the server you are inviting the bot to.)
+2. Add a new application and bot user to your Discord account (on the [Discord Developer Portal](https://discord.com/developers/applications)) -  then invite your bot to a server you manage with invite link:
+- **https://discordapp.com/oauth2/authorize?client_id=CLIENT_ID&scope=bot&permissions=3072**
+    - *Replace *'CLIENT_ID'* with your (newly created?) application's client_id*
+    - *The above invitation link will open up a Discord page, allowing you to invite the bot to servers you manage. Invite gives bot permission to view the selected server's channel messages and post new messages.*
+    - *Note: The &permissions=3072 is important to allow your bot to see the channels and send messages. (This part is missing from default Discord Dev -page invitation link)*  
 
 3. Run the bot with 'python3 main.py' *(preferably inside a screen of course)*
 
-**For all the features of the bot to work you'll need to enable all the Intents in the Bot page of your Discord Bot Application**
+**For all the features of the bot to work you'll need to enable all the Intents *('Presence-', 'Server Members-' and 'Message Content Intent')* in the Bot page of your Discord Bot Application**
 
 ## License & Credits
-Feel free to fork this repo copy/borrow stuff for your own projects but provide a link to this as credit!
+Feel free to fork this repo copy/borrow stuff for your own projects, if doing so, providing a link to here would be nice.
 
-A lot of the core code and main ideas are "borrowed" from the following two repositories, if you need or want a simpler bot instead, you should look into these:
+A lot of the core code and ideas are borrowed from the following two repositories, if you need or want a simpler bot instead, you should look into these:
 - https://github.com/OrpheusGr/Discord-IRC-Bridge
 - https://github.com/milandamen/Discord-IRC-Python
 
@@ -72,11 +73,12 @@ A lot of the core code and main ideas are "borrowed" from the following two repo
     - !topic - When typed from IRC, prints the Discord channel topic to IRC - and when typed from Discord, prints out the IRC channel topic to Discord
     - !status - Will print out the current bot/bridge uptime
     - !info - Will print out general info about messages being relayed and how to mention discord users from IRC
+    - !speak *[lang-code]* - Change the bot's language/phrases the bot is using. 'lang_code' being one of the languages found in settings.json under 'localization'. *(Saved on clean !shutdown)*
     - !btc - Fetches the current BTC/USD -value from CoinMarketCap and prints it out to linked IRC and Discord channels
-    - !value [stocksymbol] - Fetches the current STOCK/USD -value of stock symbol from finance.yahoo.com and prints it out to linked IRC and Discord channels
-    - !ignorequits [ircuser] - if there is a IRC-user with unstable connection causing spam on Discord, you can ignore this user for the JOINS/PARTS/QUITS with this command.
+    - !value *[stocksymbol]* - Fetches the current STOCK/USD -value of stock symbol from finance.yahoo.com and prints it out to linked IRC and Discord channels
+    - !ignorequits *[ircuser]* - if there is a IRC-user with unstable connection causing spam on Discord, you can ignore this user for the JOINS/PARTS/QUITS with this command. *(Saved on clean !shutdown)*
     - !shutdown to kill the bot. (only for botops) (works on IRC too)
-    - On 'clean' shutdown, the runtime-settings, such as used language and ignored IRC-part/quit/join-users are saved to settings.json, so they will be loaded on next time the bot runs.
+        - *On 'clean' shutdown the runtime-settings, such as used language and ignored IRC-part/quit/join-users are saved to settings.json, so they will be loaded on next time the bot runs.*
 - Additional Quality of Life features for IRC:
     - Check messages for URLs, and if found, parse and report to IRC:
         - The webpage title (if available)
@@ -84,4 +86,5 @@ A lot of the core code and main ideas are "borrowed" from the following two repo
         - Short description of the webpage (if available)
 - Localization for English and Finnish (and Savonian)
     - Add your own languages/localizations to settings.json
-    - Change language during bot runtime with !speak 'lang_code_in_settings'
+    - Or edit one of the existing languages for even easier and faster customization.
+    - Change language during bot runtime with !speak 'lang_code_in_settings' - currently used bot language is saved when clean !shutdown
