@@ -2,6 +2,7 @@ import time
 
 is_running = 0
 timers = {}
+unnamed_index = 0
 
 def set_thread_lock(lock):
     """ Sets the global thread_lock -variable from given param """
@@ -69,14 +70,19 @@ def add_timer(name, delay, target, *arguments):
     - @param args / params to run the target function with
     """
     global timers
+    
+    currtime = time.time()
+    if name == "":
+        global unnamed_index
+        name = f"ID#{str(unnamed_index)}"
+        unnamed_index += 1
+        #name = str(currtime)
+
     if name in timers:
         with thread_lock:
             print(f"[TIMERS] a timer with this name already exists")
         raise Exception(f"[TIMERS] a timer with this name already exists")
     
-    currtime = time.time()
-    if name == "":
-        name = str(currtime)
     if type(delay) != int and type(delay) != float:
         with thread_lock:
             print(f"[TIMERS] delay argument is expected to be int or float")

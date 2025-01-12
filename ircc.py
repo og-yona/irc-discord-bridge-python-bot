@@ -226,15 +226,34 @@ class IRC:
             return
         
         # Split the message into suitable parts
+        #self.debugPrint(self.get_myprivmsg_line(channel))
         msg_parts = self.split_msg(msg, 479 - len(self.get_myprivmsg_line(channel))) # Need to split the messages to shorter pieces to ensure no missing words !
 
-        # Send each part with a consistent delay
-        for part in msg_parts:
-            time.sleep(0.5)  # Fixed delay between messages
-            if action:
-                self.connection.action(channel, f"{part}")
-            else:
-                self.connection.privmsg(channel, f"{part}")
+        # Check for split/multi message send
+        if len(msg_parts) > 1:          
+            # Send each part with a consistent delay
+            send_delay = 0.1  
+            for part in msg_parts:
+                # time.sleep(0.5)  # Fixed delay between messages
+                if action:
+                    #self.connection.action(channel, f"{part}")
+                    #self.debugPrint(f"send part-action {channel} : {part}")
+                    timers.add_timer("", send_delay, self.connection.action, channel, f"{part}")
+                else:
+                    #self.connection.privmsg(channel, f"{part}")
+                    #self.debugPrint(f"send part-msg {channel} : {part}")
+                    timers.add_timer("", send_delay, self.connection.privmsg, channel, f"{part}")
+                send_delay += 0.4                
+        # Send a single message with no delay
+        else: 
+            for part in msg_parts:
+                if action:
+                    #self.debugPrint(f"send action {channel} : {part}")
+                    self.connection.action(channel, f"{part}")
+                else:
+                    #self.debugPrint(f"send msg {channel} : {part}")
+                    self.connection.privmsg(channel, f"{part}")
+
 
     def send_irc_message(self, irc_chan, message):
         """ The IRC-Bot sends a given message to the referred channel """
@@ -980,6 +999,7 @@ class IRC:
         else:
             connection.who(event.target)
             self.myprivmsg_line = f"{event.source} PRIVMSG"
+            #self.debugPrint(self.myprivmsg_line)
 
             time.sleep(2)
             self.debugPrint(f"[IRC] Joined to channel {event.target}")
