@@ -103,7 +103,7 @@ class IRC:
         - Keep processing IRC events
         - Keep connection and handle the events until shutdown -signal received
         """
-        self.debugPrint("[IRC] Starting irc-bot loop")
+        self.debug_print("[IRC] Starting irc-bot loop")
 
         self.is_running = 1
         self.start_time= int(time.time())
@@ -117,7 +117,7 @@ class IRC:
                 self.connect()
                 self.irc_connection_successfull = 1
             except:
-                self.debugPrint(f"[IRC] Problem with connecting to irc-server - retrying {irc_retries} / 10 ... ")
+                self.debug_print(f"[IRC] Problem with connecting to irc-server - retrying {irc_retries} / 10 ... ")
                 time.sleep(1.0)
                 irc_retries -= 1
 
@@ -136,13 +136,13 @@ class IRC:
         - Connect - and Retry connecting if it fails - to the IRC-server
         - Add IRC-event message handlers
         """
-        self.debugPrint("[IRC] Connecting to irc server ...")
+        self.debug_print("[IRC] Connecting to irc server ...")
         self.discord.set_status("Connecting to IRC...")
         try:
             c = self.connection.connect(self.server, self.port, self.nick, None, self.bot_hostname, self.bot_realname)
             # With successfull connection - add all callbacks
             if self.connection:
-                self.debugPrint("[IRC] Caught the IRC-connection ...")
+                self.debug_print("[IRC] Caught the IRC-connection ...")
                 c.add_global_handler("all_raw_messages", self.on_all_raw) # ! Should remove the RAW-messages after connection establishment to not spam !
                 c.add_global_handler("pubmsg", self.on_pubmsg)
                 c.add_global_handler("join", self.on_join)
@@ -171,7 +171,7 @@ class IRC:
 
             # Retry if unsuccessfull conncetion
             else:
-                self.debugPrint(f"[IRC] Problem connecting to server ... retrying")
+                self.debug_print(f"[IRC] Problem connecting to server ... retrying")
                 self.connect() # retry
                 return
             
@@ -226,7 +226,7 @@ class IRC:
             return
         
         # Split the message into suitable parts
-        #self.debugPrint(self.get_myprivmsg_line(channel))
+        #self.debug_print(self.get_myprivmsg_line(channel))
         msg_parts = self.split_msg(msg, 479 - len(self.get_myprivmsg_line(channel))) # Need to split the messages to shorter pieces to ensure no missing words !
 
         # Check for split/multi message send
@@ -237,21 +237,21 @@ class IRC:
                 # time.sleep(0.5)  # Fixed delay between messages
                 if action:
                     #self.connection.action(channel, f"{part}")
-                    #self.debugPrint(f"send part-action {channel} : {part}")
+                    #self.debug_print(f"send part-action {channel} : {part}")
                     timers.add_timer("", send_delay, self.connection.action, channel, f"{part}")
                 else:
                     #self.connection.privmsg(channel, f"{part}")
-                    #self.debugPrint(f"send part-msg {channel} : {part}")
+                    #self.debug_print(f"send part-msg {channel} : {part}")
                     timers.add_timer("", send_delay, self.connection.privmsg, channel, f"{part}")
                 send_delay += 0.4                
         # Send a single message with no delay
         else: 
             for part in msg_parts:
                 if action:
-                    #self.debugPrint(f"send action {channel} : {part}")
+                    #self.debug_print(f"send action {channel} : {part}")
                     self.connection.action(channel, f"{part}")
                 else:
-                    #self.debugPrint(f"send msg {channel} : {part}")
+                    #self.debug_print(f"send msg {channel} : {part}")
                     self.connection.privmsg(channel, f"{part}")
 
 
@@ -259,12 +259,12 @@ class IRC:
         """ The IRC-Bot sends a given message to the referred channel """
         self.send_message(irc_chan, message)
 
-    def send_irc_and_discord(self, irc_chan, message): #self.debugPrint("send_irc_and_discord-test")    
+    def send_irc_and_discord(self, irc_chan, message): #self.debug_print("send_irc_and_discord-test")    
         """ Send message to both IRC-channel and to the connected discord """
         self.send_irc_message(irc_chan, message)
         self.discord.send_discord_message(self.irc_channel_sets[irc_chan]["real_chan"], message)
 
-    def send_to_last_channel(self, message): #self.debugPrint("sendtolastchan-test")   
+    def send_to_last_channel(self, message): #self.debug_print("sendtolastchan-test")   
         """ Sends message to last used channel - be it IRC/Discord """ 
         if type(self.last_used_channel) == str:
             self.send_irc_message(self.last_used_channel, message)
@@ -288,7 +288,7 @@ class IRC:
     # - Debug printing / set & get vars / etc  #
     ############################################
 
-    def debugPrint(self, message):
+    def debug_print(self, message):
         """ print on console with thread lock (= mutex ?) """
         with self.thread_lock:
             print(message)
@@ -441,7 +441,7 @@ class IRC:
                 self.irc_channels_lists[channel] = {}
             self.irc_channels_lists[channel][actual_name] = {"host": "?"}
             
-        self.debugPrint(f"[IRC] Users updated on channel :{str(channel)} {str(self.irc_user_statuses)}")
+        self.debug_print(f"[IRC] Users updated on channel :{str(channel)} {str(self.irc_user_statuses)}")
 
     def get_irc_user_statuses(self):
         """ Return the currently cachec IRC-users & their statuses """
@@ -618,8 +618,7 @@ class IRC:
         - returns the processed string array/list
         """
         all_pieces = []
-        current_piece = ""        
-        #self.debugPrint(f"original msg: {msg}")
+        current_piece = ""
 
         msgsplit = re.split(r'(\s+)', msg)  # Retain whitespace as part of tokens
         
@@ -634,7 +633,6 @@ class IRC:
         if current_piece:  # Add the remaining part
             all_pieces.append(current_piece.strip())
    
-        #self.debugPrint(f"all pieces: {all_pieces}")
         return all_pieces
 
     def send_irc_topic_to_discord(self, topicString, irc_channel):
@@ -654,7 +652,7 @@ class IRC:
         self.discord.send_irc_msg_to_discord(discord_channel, None, topicString) 
 
         # Debugs / Spam checks      
-        self.debugPrint(f"[Discord] queried : {topicString}")
+        self.debug_print(f"[Discord] queried : {topicString}")
         self.unset_discord_topic_query()
 
     def process_and_send_topic_string(self, topicArgs):
@@ -704,19 +702,19 @@ class IRC:
         - Should call this by non-blocking means (timers) / from separate thread, to not block the event handlers """
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        }
+        } # Present ourself as a web-browser when making the page-requests, as some sites do not otherwise care to respond.
         try:
             response = requests.get(url, headers=headers, timeout=10)  #  We need to get the response in 2 seconds for this to not block the bot too much. @todo async
-            response.raise_for_status() # Raise an exception for HTTP errors
-            response.encoding = response.apparent_encoding
-            soup = BeautifulSoup(response.text, 'html.parser')
+            response.raise_for_status()                        # Raise an exception for HTTP errors
+            response.encoding = response.apparent_encoding     # Try to correct the character enconding (to fix for example scandinavic letters 'äöå' etc)
+            soup = BeautifulSoup(response.text, 'html.parser') # Parse the http-response
             return soup
         except Exception as e:
             self.on_error(f"Error fetching soup - {url} : {e}")
             return None
 
     def get_title_from_soup(self, soup):
-        """ Return <title> webpage title </title> from soup """
+        """ Return <title> webpage title </title> from soup parse of http-page """
         try:
             title = soup.title.string.strip() if soup.title else None
             return title
@@ -724,7 +722,10 @@ class IRC:
             self.on_error(f"Error get_title_from_soup: {e}")
             return None
         
-    def get_short_description_from_soup(self, soup):        
+    def get_short_description_from_soup(self, soup):
+        """ Look the http-soup for 'short description', 
+        which we can print to IRC for information about URL """
+
         # Check for Open Graph description
         og_desc = soup.find('meta', attrs={'property':'og:description'})
         if og_desc and og_desc.get('content'):
@@ -742,9 +743,8 @@ class IRC:
 
         # Fallback to the first paragraph
         first_paragraph = soup.find('p')
-        if first_paragraph:
+        if first_paragraph: # Use " " -separator to fix wikipedia-kind of http-syntax
             return first_paragraph.get_text(separator=" ", strip=True)
-
 
     def parse_iso8601_duration(self, iso_duration):
         """ Parses and returns video iso8601 duration from YouTube duration metadata content """
@@ -777,50 +777,48 @@ class IRC:
             else:
                 return None        
         except Exception as e:
-            self.debugPrint(f"Error with fetching video duration metadata")
+            self.debug_print(f"Error with fetching video duration metadata")
             return None
         
     def report_btc_usd_valuation(self, irc_channel):
         """
         # Report BTC/USD valuation
         - fetch the current course from CoinMarketCap
-        - report the current ratio to both linked channels
+        - report the current ratio to IRC-channel and the linked Discord -channel
         """
         url = "https://coinmarketcap.com/currencies/bitcoin/"
         soup = self.get_page_soup(url)
 
-        # Get price element
-        #price_element = soup.find("div", class_="priceValue") # sc-65e7f566-0 WXGwg base-text
+        # Get price element # price_element = soup.find("div", class_="priceValue") # sc-65e7f566-0 WXGwg base-text
         price_element = soup.find("div", class_="sc-65e7f566-0 czwNaM flexStart alignBaseline")
         if price_element:
             price = price_element.text.strip()
             priceString = f"BTC/USD : {price}"
         else:
-            priceString = f"Ongelma kurssin hakemisessa."
+            priceString = f"Problem connecting to {url}"
         
         self.send_irc_and_discord(irc_channel, priceString)
 
     def report_mstr_valuation(self, irc_channel):
-        """ Report MSTR/USD valuation to linked channels """
+        """ Report MSTR/USD valuation to given IRC-channel and the linked Discord -channel """
         self.get_and_report_stock_value(irc_channel, "MSTR")
 
     def get_and_report_stock_value(self, irc_channel, market_symbol):
         """
         # Report MSTR/USD valuation
         - fetch the current course from Yahoo Markets
-        - report the current ratio to both linked channels
+        - report the current ratio to IRC-channel and the linked Discord -channel
         """
         url = f"https://finance.yahoo.com/quote/{market_symbol}/"
         soup = self.get_page_soup(url) # container yf-1tejb6
  
-        # Get price element
-        #price_element = soup.find("div", class_="priceValue") # sc-65e7f566-0 WXGwg base-text
+        # Get price element # price_element = soup.find("div", class_="priceValue") # sc-65e7f566-0 WXGwg base-text
         price_element = soup.find("div", class_="container yf-1tejb6")
         if price_element:
             price = price_element.text.strip()
             priceString = f"{market_symbol}/USD : {price}"
         else:
-            priceString = f"Ongelma kurssin hakemisessa."
+            priceString = f"Problem connecting to {url}"
         
         self.send_irc_and_discord(irc_channel, priceString)
 
@@ -830,15 +828,16 @@ class IRC:
         # Process message for potential URLs 
         - If URLs found, report to IRC-channel the :
         - Webpage titles 
-        - And/or video durations 
+        - And/or video durations
+        - Short descriptions
         """
-        #self.debugPrint(f"I proces msg {irc_channel} : {message}")
+        
         urls = self.extract_urls(message)
         for url in urls:
-            soup = self.get_page_soup(url)
-            title = self.get_title_from_soup(soup)
-            description = self.get_short_description_from_soup(soup)
-            duration = self.get_video_dur_from_soup(soup)
+            soup = self.get_page_soup(url)                # Request the http-parse/soup from given URL
+            title = self.get_title_from_soup(soup)        # Get the page-title from soup
+            description = self.get_short_description_from_soup(soup) # Get the short description from soup
+            duration = self.get_video_dur_from_soup(soup) # Get the youtube video duration from soup
             if (title):
                 titleString = f"{title}"
                 fullInfoString = titleString
@@ -848,16 +847,13 @@ class IRC:
             # Combine title with Duration, if available
             if (duration):
                 fullInfoString += f" | {duration}"
-
-            # Title is only one word - 
-            #if len(fullInfoString.split()) == 1:
             
-            # Contain the title in ( ) for clarity
+            # Contain the infostring in ( ) for clarity
             fullInfoString = f"({fullInfoString})"
             
-            if (fullInfoString):
+            if (fullInfoString): # Send the title + duration info-string
                 self.send_message(irc_channel, fullInfoString)
-            if (description):
+            if (description):    # Send the short-description info-string
                 description_string = f"({description})"
                 self.send_message(irc_channel, description_string)
    
@@ -907,17 +903,17 @@ class IRC:
         """
 
         # This prints all traffic from irc-server if handled
-        # self.debugPrint(f"[IRC][RAW] {event.source} - {event.type} - {event.arguments}")
+        # self.debug_print(f"[IRC][RAW] {event.source} - {event.type} - {event.arguments}")
 
         splitArgs = str(event.arguments)#.split()
 
         # 020 = Connection initializing / handshaking with server
         if "020" in splitArgs: 
-            self.debugPrint(f"[IRC][RAW] {event.arguments}")
+            self.debug_print(f"[IRC][RAW] {event.arguments}")
             return
         # 001 = Welcome message
         elif "001" in splitArgs: 
-            self.debugPrint(f"[IRC][RAW] {event.arguments}")
+            self.debug_print(f"[IRC][RAW] {event.arguments}")
             return
         # 331 - No topic -reply
         elif "331" in splitArgs:
@@ -936,12 +932,12 @@ class IRC:
         """ Relay the returned names to Discord (per !who -request from Discord) """
 
         if connection != self.connection: 
-            return # self.debugPrint("error?")
+            return # self.debug_print("error?")
         
         channel = event.arguments[1]
         names = event.arguments[2]
         finalReply = f'{self.get_word("on_the_channel")} @ {channel} : **{names}**'
-        #self.debugPrint(finalReply)
+        #self.debug_print(finalReply)
 
         # Update the users
         self.update_irc_users(channel, names)
@@ -964,7 +960,7 @@ class IRC:
             self.irc_channels_lists[channel] = {}
 
         self.irc_channels_lists[channel][nick] = {"host": host}
-        #self.debugPrint(self.irc_channels_lists)
+        #self.debug_print(self.irc_channels_lists)
 
     def on_join(self, connection, event):
         """ Event handler for IRC channel joins """
@@ -999,10 +995,10 @@ class IRC:
         else:
             connection.who(event.target)
             self.myprivmsg_line = f"{event.source} PRIVMSG"
-            #self.debugPrint(self.myprivmsg_line)
+            #self.debug_print(self.myprivmsg_line)
 
             time.sleep(2)
-            self.debugPrint(f"[IRC] Joined to channel {event.target}")
+            self.debug_print(f"[IRC] Joined to channel {event.target}")
                 
             joinmsg = f"** !! {self.get_word('connected')} 'IRC {event.target}' - 'Discord #{discord_chan}' -{self.get_word('bridge')} == {self.get_word('msgs_on_channels_being_relayed')} !! **"
             # On this occasion we actually want to send this message to discrd through the bot itself, instead of possible webhook
@@ -1131,7 +1127,7 @@ class IRC:
     def on_error(self, message):
         """ Event handler for irc-errors / print them to console/terminal """
         self.irc_logger.exception(message)
-        self.debugPrint(message)
+        self.debug_print(message)
 
     def on_error_event(self, connection, event):
         """ Event handler for irc-errors / print them to console/terminal """
@@ -1140,10 +1136,10 @@ class IRC:
     def on_privmsg(self, connection, event):
         """ Event handler for private irc-messages / pritn them to console / terminal
             - @todo (?) send to bot handler(s)? """
-        self.debugPrint(f"{event.source.nick} {event.arguments[0]}")
+        self.debug_print(f"{event.source.nick} {event.arguments[0]}")
 
     #def on_privnotice(connection, event):
-    #   self.debugPrint(f"{event.source.nick} {event.arguments[0]}")
+    #   self.debug_print(f"{event.source.nick} {event.arguments[0]}")
 
     #===========================
     # Handlers for topic replies
@@ -1153,7 +1149,7 @@ class IRC:
         # on_topic actually responds to TOPIC change
         - Not topic queries made by bot 
         """
-        #self.debugPrint("on_topic: ")
+        #self.debug_print("on_topic: ")
         irc_channel = event.target
         if connection == self.connection:
             # fix the topic format from raw argument
@@ -1304,16 +1300,16 @@ class IRC:
                 else:
                     self.send_message(event.target, f'{self.get_word("invalid_command_param")}')
 
-        # (bridge) Status / Uptime 
+        # Status / Uptime (of bridge/bots)
         elif cmd == "!status" or cmd == "!tila":
             uptime = self.get_uptime()
             self.send_irc_and_discord(discord_chan, event.target, f'{self.get_word("bridge_uptime")} {uptime}')
 
-        # Who are around in Discord
+        # Who are around in linked Discord-channel
         elif cmd == "!who" or cmd == "!ketä" or cmd == "!kuka":       
             self.send_discord_users_to_irc(event.target)
             
-        # Get & print the Discord channel topic to IRC
+        # Get & print the linked Discord channel topic to IRC
         elif cmd == "!topic":
             self.print_discord_topic_to_irc(discord_chan, event.target)
             
@@ -1326,7 +1322,7 @@ class IRC:
             self.report_mstr_valuation(event.target)
 
         # Report the current market value for requested market symbol through yahoo finance
-        elif cmd == "!value" or cmd == "!kurssi":
+        elif cmd == "!stock" or cmd == "!value" or cmd == "!kurssi":
             if len(message) == 2:
                 symbol_to_query = message[1]
                 self.get_and_report_stock_value(event.target, symbol_to_query)
@@ -1396,7 +1392,7 @@ class IRC:
         if event.type == "action":
             finalmsg = f"*{finalmsg}*"
 
-        self.debugPrint(f"[IRC] {event.target} > [Discord] #{discord_chan} - {sender} : {finalmsg}")
+        self.debug_print(f"[IRC] {event.target} > [Discord] #{discord_chan} - {sender} : {finalmsg}")
 
         #===============================================
         # SEND MESSAGE TO DISCORD (via webhook -wrapper, which will instead use direct bot -message, if no webhook available/problems with it)
@@ -1418,8 +1414,8 @@ class IRC:
 
         # Successfully connected
         self.irc_connection_successfull = 1
-        self.debugPrint(f"[IRC] Successful connection to {event.source}")
-        # self.debugPrint(str(self.irc_channel_sets))
+        self.debug_print(f"[IRC] Successful connection to {event.source}")
+        # self.debug_print(str(self.irc_channel_sets))
         
         # Remove old reconnection timer if there for some reason is/was any
         if "self.connection-reconn" in timers.timers:
@@ -1429,7 +1425,7 @@ class IRC:
         channel_join_delay = 1
         for irc_channel in self.irc_channel_sets:
             channel_join_delay += 2
-            self.debugPrint(f"[IRC] Joining to {irc_channel} in {channel_join_delay} seconds")
+            self.debug_print(f"[IRC] Joining to {irc_channel} in {channel_join_delay} seconds")
             timers.add_timer(f"join-{irc_channel}", channel_join_delay, connection.join, irc_channel)
 
         # Reset disconnect retries
@@ -1445,7 +1441,7 @@ class IRC:
         # !! Except we actually need it for listening the wanted numeral events !!
         # becouse of the  numeral handlers for some reason do not seem to work ?!
 
-        self.debugPrint("[IRC] IRC CONNECTED & READY")
+        self.debug_print("[IRC] IRC CONNECTED & READY")
 
     #########################################################
     # Event handler for disconnecting / irc-connection lost #
@@ -1468,7 +1464,7 @@ class IRC:
             self.disconnectretries += 1
             if self.disconnectretries >= self.maxConnectRetries:
                 # And print errors and message to discord if unsuccessfull with reconnecting to IRC
-                self.debugPrint(f"[IRC] Failed to connect {self.maxConnectRetries} times, aborting.")
+                self.debug_print(f"[IRC] Failed to connect {self.maxConnectRetries} times, aborting.")
                 self.discord.send_to_all_discord_channels(f'{self.get_word("retried")} {self.maxConnectRetries} {self.get_word("times_no_success")}: {event.source} {event.arguments[0]}')
                 time.sleep(1)
                 # And then shut down the bot processes
@@ -1482,7 +1478,7 @@ class IRC:
 
             # Add reconnecting timer to reconnect in 5 seconds
             timers.add_timer("self.connection_reconn", 5, connection.reconnect) # 10
-            self.debugPrint("[IRC] Failed to connect... reconnecting...")
+            self.debug_print("[IRC] Failed to connect... reconnecting...")
 
         else:
-            self.debugPrint("[IRC] What connection did we exactly lose...?")
+            self.debug_print("[IRC] What connection did we exactly lose...?")

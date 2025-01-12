@@ -75,7 +75,7 @@ A lot of the core code and ideas are borrowed from the following two repositorie
     - !info - Will print out general info about messages being relayed and how to mention discord users from IRC
     - !speak *[lang-code]* - Change the bot's language/phrases the bot is using. 'lang_code' being one of the languages found in settings.json under 'localization'. *(Saved on clean !shutdown)*
     - !btc - Fetches the current BTC/USD -value from CoinMarketCap and prints it out to linked IRC and Discord channels
-    - !value *[stocksymbol]* - Fetches the current STOCK/USD -value of stock symbol from finance.yahoo.com and prints it out to linked IRC and Discord channels
+    - !stock *[stocksymbol]* - Fetches the current STOCK/USD -value of stock symbol from finance.yahoo.com and prints it out to linked IRC and Discord channels
     - !ignorequits *[ircuser]* - if there is a IRC-user with unstable connection causing spam on Discord, you can ignore this user for the JOINS/PARTS/QUITS with this command. *(Saved on clean !shutdown)*
     - !shutdown to kill the bot. (only for botops) (works on IRC too)
         - *On 'clean' shutdown the runtime-settings, such as used language and ignored IRC-part/quit/join-users are saved to settings.json, so they will be loaded on next time the bot runs.*

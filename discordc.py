@@ -81,7 +81,7 @@ class Discord:
         self.discord_logger.addHandler(self.discord_file_handler)
         
         # Register async -message for/when terminal interrupt/shutdown
-        atexit.register(self.shutdown, "Silta tapettu terminaalista", True)
+        atexit.register(self.shutdown, "Killed from terminal", True)
 
     #####################################
     #        CORE RUN / STOP            # 
@@ -111,7 +111,7 @@ class Discord:
         - The actual implementation for shutting down the connections and bots
         """
         uptime = irc.get_uptime()
-        debugPrint(f"Exit : {reason} / IRCdom bridges falling down - falling down - falling down...")
+        debug_print(f"Exit : {reason} / IRC-cord bridges falling down - falling down - falling down...")
             
         self.timesleep = 0
         irc.sent_quit_on()
@@ -129,12 +129,13 @@ class Discord:
         """ 
         # Send IRC message to Discord (wrapper/utilities)
         - !! USE THIS AS MAIN MESSAGE SENDING FUNCTION AT IRC - CLASS !!
-        - If relaying BOT MESSAGE through WebHook, use '[IRC]' as Webhook User Name
+        - By default IRC-nicks are set as Webhook user, and messages are sent through that
+        - If relaying BOT MESSAGE through WebHook, uses '[IRC]' as Webhook User Name
         - If relaying IRC USER message through BOT - add '[IRC] ' as prefix to the message to separate it from bot name in Discord
         - If no webhook is set for the channel_set - relay the message through bot instead
         - If webhook is invalid/errors with sending - will relay warning & the message through bot itself
         """
-        #debugPrint(f"[Discord] debug ircmsg: disc_chan:{discord_chan} sender: {sender} msg: {message}")
+        #debug_print(f"[Discord] debug ircmsg: disc_chan:{discord_chan} sender: {sender} msg: {message}")
 
         if sender:
             ircUserStatuses = irc.get_irc_user_statuses()
@@ -150,9 +151,9 @@ class Discord:
             try:
                 response = self.send_through_webhook(webhooklink, message, ircDisplayname)
             except Exception as e:
-                debugPrint(f"webhook error: {e}")
-                self.send_discord_message(discord_chan, f'```{irc.get_word("webhook_problem_message")}```')
-                self.send_discord_message(discord_chan, f'**[IRC]** {ircDisplayname} {message}')
+                debug_print(f"[Discord] Webhook error: {e}")
+                self.discord_logger.exception(f"[Discord] Webhook error: {e}")
+                self.send_discord_message(discord_chan, f'```{irc.get_word("webhook_problem_message")}```\n**[IRC]** {ircDisplayname} {message}')
         # Or simply relay the message through the bot itself
         else:
             if sender: # Sent by actual IRC -user
@@ -244,7 +245,7 @@ class Discord:
                     guilds = {currentChannel}
                 )
                 self.known_users[member.display_name] = new_user_info
-        debugPrint("[Discord] Known users / details updated") # Debug print all member infos
+        debug_print("[Discord] Known users / details updated") # Debug print all member infos
 
     #####################################
     #    SET & GET GLOBALS / VARIABLES  # 
@@ -306,7 +307,7 @@ class Discord:
 #          MISC. UTILITIES          # 
 ##################################### 
 
-def debugPrint(message):
+def debug_print(message):
     """ debug print - with thread lock to the console """
     global thread_lock
     with thread_lock:
@@ -561,7 +562,7 @@ async def on_message_edit(before, after):
         irc.send_irc_message(irc_chan, editMessage)
 
         # debug print on console log
-        debugPrint("[Discord] " + editMessage)
+        debug_print("[Discord] " + editMessage)
 
 #####################################
 #  Discord -reaction handling       #
@@ -612,7 +613,7 @@ async def on_reaction_add(reaction, user):
         irc.send_irc_message(irc_chan, fixedMessage)
 
         # debug print on console log
-        debugPrint("[Discord] " + fixedMessage)
+        debug_print("[Discord] " + fixedMessage)
 
 #####################################
 #   Discord -message handling       #
@@ -684,7 +685,7 @@ async def on_message(message):
         else:
             content = content + " " + urls
     if content == "" and msgrefpin == False:
-        debugPrint("Stickers/embed are not seen by discord.py")
+        debug_print("Stickers/embed are not seen by discord.py")
         return    
     
     #==================================
@@ -711,7 +712,7 @@ async def on_message(message):
         content = f"{content} (Re: {timeFormatted}  {shortMessage})"
 
     # Debug print on terminal
-    debugPrint(f"[Discord] {message.channel.name} > [IRC] {irc_chan} {message.author.name}: {content}")
+    debug_print(f"[Discord] {message.channel.name} > [IRC] {irc_chan} {message.author.name}: {content}")
    
     ###################################
     # SEND the discord message to IRC #
@@ -770,11 +771,11 @@ async def on_message(message):
     elif cmd == "!status" or cmd == "!tila":
         discordc.send_uptime(message.channel, irc_chan)
     
-    # Who are around in IRC channel
+    # Who are around in linked IRC-channel
     elif cmd == "!who" or cmd == "!ketä" or cmd == "!kuka":
         irc.query_irc_names_to_discord(irc_chan)
     
-    # Topic of the IRC channel
+    # Topic of the linked IRC-channel
     elif cmd == "!topic" or cmd == "!otsikko":
         irc.query_irc_topic_to_discord(irc_chan)
             
@@ -787,7 +788,7 @@ async def on_message(message):
         irc.report_mstr_valuation(irc_chan)
 
     # Report the current market value for requested market symbol through yahoo finance
-    elif cmd == "!value" or cmd == "!kurssi":
+    elif cmd == "!stock" or cmd == "!value" or cmd == "!kurssi":
         if len(contentsplit) == 2:
             symbol_to_query = contentsplit[1]
             irc.get_and_report_stock_value(irc_chan, symbol_to_query)
