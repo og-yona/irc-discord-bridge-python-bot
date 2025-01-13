@@ -164,9 +164,16 @@ class Discord:
 
     def send_through_webhook(self, webhooklink, finalmsg, renderedUsername):
         """ Utility / wrapper for creating / sending messages through webhooks (so we dont have to do it on IRC-class' side..) """
-        webhook = DiscordWebhook(url=webhooklink, content=finalmsg, username=renderedUsername)
-        response = webhook.execute()
-        return response
+        #webhook = DiscordWebhook(url=webhooklink, content=finalmsg, username=renderedUsername)
+        #response = webhook.execute()
+        #return response    
+        global discord_bot
+        try:
+            asyncio.run_coroutine_threadsafe(send_discord_webhook_async(webhooklink, finalmsg, renderedUsername), discord_bot.loop)
+            self.discord_error_spam_timer = 0
+        except Exception as e:      
+            debug_print(f"[Discord] Error: {e}")
+            error_report_to_irc_disc_problem(e)
     
     def send_discord_message(self, discord_chan, message):
         """
@@ -177,8 +184,8 @@ class Discord:
             self.sendmymsg_lastcall = time.time()
         ctime = time.time()
         diff = ctime - self.sendmymsg_lastcall
-        if diff < 2:
-            self.sendmymsg_delay += 2
+        if diff < 1:
+            self.sendmymsg_delay += 0.1
             timers.add_timer("", self.sendmymsg_delay, self.send_discord_message_b, *(discord_chan, message))
         else:
             self.sendmymsg_delay = 0
@@ -193,10 +200,7 @@ class Discord:
             self.discord_error_spam_timer = 0
         except Exception as e:      
             debug_print(f"[Discord] Error: {e}")
-            self.discord_logger.exception(f"[Discord] Error: {e}")
-            self.discord_error_spam_timer += 1
-            if self.discord_error_spam_timer > 10:
-                irc.send_to_all_irc_channels(f"[Discord] Error: {e}")
+            error_report_to_irc_disc_problem(e)
 
     def send_to_all_discord_channels(self, message):
         """ Send message to All configured DISCORD channels"""
@@ -278,16 +282,23 @@ class Discord:
         if self.connected_to_discord == 0:
             self.temp_status_message = statusmsg
             return
+        
+        # Stop current status-timer, if existing
+        if "set_status" in timers.timers and statusmsg == "":
+            return
+        elif "set_status" in timers.timers:
+            timers.cancel_timer("set_status")
 
-        if statusmsg != "": # Set Custom status
+        # Set CUSTOM STATUS instead of looping through the defaults
+        if statusmsg != "": 
             self.temp_status_message = statusmsg # Set Custom Status string
             asyncio.run_coroutine_threadsafe(set_status_async(statusmsg, 5), discord_bot.loop)
-            # Stop looping statuses if manual status is set
-            if "set_status" in timers.timers:
-                timers.cancel_timer("set_status")
-            return
+            return # Return after setting custom status - without starting the status -loop
         
-        self.temp_status_message = "" # empty temp string if no new status string has been given.
+        # START/ADVANCE DEFAULT STATUS LOOP
+
+        # Empty temp string if no new status string has been given.
+        self.temp_status_message = "" 
 
         # Or loop through settings.json -statuses with "Listening to..."
         c_status = settings["status_messages"][self.statusindex]
@@ -322,8 +333,11 @@ class Discord:
 def debug_print(message):
     """ debug print - with thread lock to the console """
     global thread_lock
-    with thread_lock:
+    if thread_lock.locked():
         print(message)
+    else:
+        with thread_lock:
+            print(message)
 
 def fix_nick(nick):
     """ Util to regex scrape invalid characters out of a nick """
@@ -445,6 +459,14 @@ def give_short_version_of_message(content, length):
         shortMessage = content
     return shortMessage
 
+def error_report_to_irc_disc_problem(e):
+    """ Report to IRC that there is a discord-connection problem - only every 10th error message allowed (unless reseted meanwhile with success)  """
+    if discordc.discord_error_spam_timer ==  0:
+        irc.send_to_all_irc_channels(f"[Discord] There is Error with Discord / Unable to relay the messages: {e}")
+    if discordc.discord_error_spam_timer > 10:
+        discordc.discord_error_spam_timer = 0
+    discordc.discord_error_spam_timer += 1
+
 ################################
 #        Async utils           #
 ################################
@@ -460,6 +482,16 @@ async def edit_my_message_async(msg_object, edit):
 async def del_my_message_async(msg_object):
     """ Async Delete my message from discord """
     await msg_object.delete()
+
+async def send_discord_webhook_async(webhooklink, finalmsg, renderedUsername):
+    try:
+        webhook = DiscordWebhook(url=webhooklink, content=finalmsg, username=renderedUsername, timeout=1)
+        response = webhook.execute()
+        return response
+    except Exception as e:      
+        debug_print(f"[Discord] Error: {e}")
+        error_report_to_irc_disc_problem(e)
+        return None
 
 async def set_status_async(status, activityType=2):
     """ Async Set the discord bot status
@@ -568,9 +600,10 @@ async def on_message_edit(before, after):
         discordc.last_used_channel = after.channel
 
         cleanedBefore = irc_dressup(beforecontent)
+        shortMessage = give_short_version_of_message(cleanedBefore, 70)
         cleanedAfter = irc_dressup(aftercontent)
 
-        editMessage = f'{discord_settings["relayTagUsed"]}{discord_settings["relayNickPrefix"]}{author}{discord_settings["relayNickPostfix"]} [EDIT] @\"{timeFormatted} {cleanedBefore}\" -> \"{cleanedAfter}\"'
+        editMessage = f'{discord_settings["relayTagUsed"]}{discord_settings["relayNickPrefix"]}{author}{discord_settings["relayNickPostfix"]} {cleanedAfter} ([EDIT] {timeFormatted} <{author}> {shortMessage})'
 
         # and Relay to IRC
         irc.send_irc_message(irc_chan, editMessage)
@@ -928,12 +961,11 @@ async def on_ready():
                 )
                 discordc.known_users[member.display_name] = new_user_info       
 
-        # Give channels to irc
-        irc.set_irc_channel_sets(settings["channel_sets"])
-
         # Discord initialization ok
-        print("[Discord] DISCORD READY")
         discordc.connected_to_discord = 1
+        print("[Discord] DISCORD READY")
         if discordc.temp_status_message != "":
             discordc.set_status(discordc.temp_status_message)
 
+        # Give channels to irc
+        irc.set_irc_channel_sets(settings["channel_sets"])

@@ -80,13 +80,13 @@ def add_timer(name, delay, target, *arguments):
 
     if name in timers:
         with thread_lock:
-            print(f"[TIMERS] a timer with this name already exists")
-        raise Exception(f"[TIMERS] a timer with this name already exists")
+            print(f"[TIMERS] a timer with this name already exists: {name}")
+        raise Exception(f"[TIMERS] a timer with this name already exists: {name}")
     
     if type(delay) != int and type(delay) != float:
         with thread_lock:
-            print(f"[TIMERS] delay argument is expected to be int or float")
-        raise TypeError(f"[TIMERS] delay argument is expected to be int or float")
+            print(f"[TIMERS] delay argument is expected to be int or float :{delay}")
+        raise TypeError(f"[TIMERS] delay argument is expected to be int or float:{delay}")
     
     timetodo = currtime + float(delay)
     timers[name] = {"time": timetodo, "target": target, "arguments": arguments}

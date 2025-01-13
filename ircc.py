@@ -59,7 +59,7 @@ class IRC:
 
         # set configurations from the settings
         self.is_running = 0
-        self.irc_connection_successfull = 0
+        self.irc_connection_successful = 0
 
         ## ! See the settings.json "comments" - for details concerning the settings !
         self.nick = irc_settings["bot_nickname"]
@@ -87,11 +87,7 @@ class IRC:
 
         self.myprivmsg_line = ""           # Cache of received last private line
         self.last_used_channel = ""     # Cache of last used discord channel
-
-        self.lastTopicInformed = ""
-        self.lastTopicInformedSpamProt = 0 # Flag for spam protecting discord against frequent topic changes
-        self.discordHasQueriedTopic = 0    # Flag if the discord has requested the irc topic
-        self.ircNamesQueried = 0           # Flag if the irc names are requested to be sent to discord
+        self.channel_spam_prots = {}
       
     #####################################
     #        CORE RUN / STOP            # 
@@ -195,9 +191,9 @@ class IRC:
         if len(message) > 1:
             reason = " ".join(message[1:])
         if reason == "":
-            shutdownMessage = f'** !! {self.get_word("shutdownmessage")} {uptime} !! **'
+            shutdownMessage = f'** `!! {self.get_word("shutdownmessage")} {uptime} !!` **'
         else:
-            shutdownMessage = f'** !! {self.get_word("shutdownmessage")} {uptime} *({reason})* !! **'
+            shutdownMessage = f'** `!! {self.get_word("shutdownmessage")} {uptime} *({reason})* !!` **'
         self.discord.send_to_all_discord_channels(shutdownMessage)
         self.send_to_all_irc_channels(shutdownMessage)
 
@@ -400,9 +396,10 @@ class IRC:
         for item in sets:
             value = sets[item]
             self.irc_channel_sets[value["irc_chan"]] = {"discord_chan": item, "webhook": value["webhook"], "real_chan": value["real_chan"]}
+            self.channel_spam_prots[value["irc_chan"]] = {"topic_asked":0, "topic_told": 0, "topic":"", "names_asked": 0, "names_told" : 0, "names":""}
 
         # If IRC-connection is already established when receiving the channels, join to them
-        if self.irc_connection_successfull == 1:
+        if self.irc_connection_successful == 1:
             self.slow_join_to_set_channels()
     
     def pop_from_channels(self, nick):
@@ -421,11 +418,14 @@ class IRC:
 
     def query_irc_names_to_discord(self, channel):
         """ Function which flags / implicates that the irc users are requested to discord as information """
-        self.ircNamesQueried = 1 # And flag the request tag
-        self.connection.names(channel)
-
-    def get_irc_names(self, channel):
-        """ Request the irc user names from a channel from server/connection"""
+        # Check for channel specific spam prot
+        if channel in self.channel_spam_prots:
+            oldNamesTime = self.channel_spam_prots[channel]["names_asked"]
+            curTime = int(time.time()) # self.debug_print(f"spamtest names_asked | oldTime {oldNamesTime} curtime {curTime}")
+            if oldNamesTime == 0 or oldNamesTime + 5 < curTime:
+                self.channel_spam_prots[channel]["names_asked"] = curTime     
+            else: # self.debug_print("spamtest names_asked blocked")
+                return
         self.connection.names(channel)
 
     def update_irc_users(self, channel, names):
@@ -545,15 +545,18 @@ class IRC:
     ############################################
     #        TOPIC UTILITIES                   # 
     ############################################
-    
-    def unset_discord_topic_query(self):
-        """ Allow topic to be queried again"""
-        self.discordHasQueriedTopic = 0
 
     def query_irc_topic_to_discord(self, channel):
         """ Query topic for an irc channel"""
+        # Check for channel specific spam prot
+        if channel in self.channel_spam_prots:
+            oldTopicTime = self.channel_spam_prots[channel]["topic_asked"]
+            curTime = int(time.time()) # self.debug_print(f"spamtest topic_asked | oldTime {oldTopicTime} curtime {curTime}")
+            if oldTopicTime == 0 or oldTopicTime + 5 < curTime:
+                self.channel_spam_prots[channel]["topic_asked"] = curTime
+            else: # self.debug_print("spamtest topic_asked blocked")
+                return
         try:
-            self.discordHasQueriedTopic = 1
             self.connection.topic(channel)
         except Exception as e:
             self.on_error(f"Error with topic querying : {e}")
@@ -650,6 +653,19 @@ class IRC:
         - Send the Topic String
         - Handle topic spam protections
         """
+        # Check for channel specific spam prot
+        if irc_channel in self.channel_spam_prots:
+            oldTopicTime = self.channel_spam_prots[irc_channel]["topic_told"]
+            oldTopic = self.channel_spam_prots[irc_channel]["topic"]
+            curTime = int(time.time())  # self.debug_print(f"spamtest topic_told | oldTime {oldTopicTime} curtime {curTime}")
+            if oldTopicTime == 0 or oldTopicTime + 5 < curTime:
+                self.channel_spam_prots[irc_channel]["topic_told"] = curTime
+                self.channel_spam_prots[irc_channel]["topic"] = topicString
+            elif oldTopic == "" or oldTopic != topicString:
+                self.channel_spam_prots[irc_channel]["topic_told"] = curTime
+                self.channel_spam_prots[irc_channel]["topic"] = topicString
+            else: # self.debug_print("spamtest topic_told blocked")
+                return
 
         # Matching discord-channel:
         discord_channel = self.get_matching_discord_channel(irc_channel)
@@ -657,11 +673,11 @@ class IRC:
             discord_channel = self.last_used_channel
 
         # Send the topic
-        self.discord.send_irc_msg_to_discord(discord_channel, None, topicString) 
+        timers.add_timer("", 1.0, self.discord.send_irc_msg_to_discord, discord_channel, None, topicString)
+        #self.discord.send_irc_msg_to_discord(discord_channel, None, topicString) 
 
         # Debugs / Spam checks      
-        self.debug_print(f"[Discord] queried : {topicString}")
-        self.unset_discord_topic_query()
+        self.debug_print(f"[IRC] Topic to [Discord] : {topicString}")
 
     def process_and_send_topic_string(self, topicArgs):
         """ 
@@ -672,32 +688,27 @@ class IRC:
 
         topicstring = re.sub(r'^:[^:]*:', '', str(topicArgs))
 
-        # Only proceed if the new topic string is different from last one raported
-        if topicstring != self.lastTopicInformed or self.lastTopicInformedSpamProt == 0 or self.discordHasQueriedTopic == 1:
-            self.lastTopicInformed = topicstring
-            self.lastTopicInformedSpamProt = 1
+        # Try to extract the irc-channel from the event reply itself
+        irc_channel = self.extract_first_irc_channel(topicArgs)
+        # ! Old way as backup: !
+        if irc_channel is None:
+            # @todo - better way to figure out the channel
+            #  becouse this does not work at bot join
+            irc_channel = "?"
+            for item in self.irc_channel_sets:
+                if self.irc_channel_sets[item]["real_chan"] == self.last_used_channel:
+                    irc_channel = item
+                    break
+            # The actual problem / bug lies in the fact that the 331/332/333 topic event 
+            # replies are a single plain string, from which there is no readily parsed
+            # IRC-channel to target these queries to @todo : parse the irc-channel 
+            # from the full event -sttring...
 
-            # Try to extract the irc-channel from the event reply itself
-            irc_channel = self.extract_first_irc_channel(topicArgs)
-            # ! Old way as backup: !
-            if irc_channel is None:
-                # @todo - better way to figure out the channel
-                #  becouse this does not work at bot join
-                irc_channel = "?"
-                for item in self.irc_channel_sets:
-                    if self.irc_channel_sets[item]["real_chan"] == self.last_used_channel:
-                        irc_channel = item
-                        break
-                # The actual problem / bug lies in the fact that the 331/332/333 topic event 
-                # replies are a single plain string, from which there is no readily parsed
-                # IRC-channel to target these queries to @todo : parse the irc-channel 
-                # from the full event -sttring...
+        # Format & fix the topic string to channel and to discord message
+        fullTopicString = f'{self.get_word("topic_word")} @ {irc_channel} : **{topicstring}**'
 
-            # Format & fix the topic string to channel and to discord message
-            fullTopicString = f'{self.get_word("topic_word")} @ {irc_channel} : **{topicstring}**'
-
-            # Send to Matching discord-channel:
-            self.send_irc_topic_to_discord(fullTopicString, irc_channel)
+        # Send to Matching discord-channel:
+        self.send_irc_topic_to_discord(fullTopicString, irc_channel)
 
     def extract_urls(self, message):
         """ Find all URLs in the message / Check string for URLs and return the URLs, if found 
@@ -916,46 +927,60 @@ class IRC:
         splitArgs = str(event.arguments)#.split()
 
         # 020 = Connection initializing / handshaking with server
-        if "020" in splitArgs: 
+        if " 020 " in splitArgs:            
             self.debug_print(f"[IRC][RAW] {event.arguments}")
             return
         # 001 = Welcome message
-        elif "001" in splitArgs: # Connection successful & finalized (?)
-            self.irc_connection_successfull = 1
+        elif " 001 " in splitArgs: # Connection successful & finalized (?)
+            self.irc_connection_successful = 1
             self.debug_print(f"[IRC][RAW] {event.arguments}")
             return
         # 331 - No topic -reply
-        elif "331" in splitArgs:
+        elif " 331 " in splitArgs:
             self.on_rpl_notopic(connection, event)
             return
         # 332 - Topic reply
-        elif "332" in splitArgs:
+        elif " 332 " in splitArgs:
             self.on_rpl_topic(connection, event)
             return
         # 333 - Topic Who / When -reply
-        elif "332" in splitArgs:
+        elif " 332 " in splitArgs:
             self.on_rpl_topicwhotime(connection, event)
             return
       
     def on_namreply(self, connection, event):
-        """ Relay the returned names to Discord (per !who -request from Discord) """
+        """ Relay the returned names to Discord (per !who -request from Discord) 
+        - Check for channel-specific spam-protection """
 
         if connection != self.connection: 
             return # self.debug_print("error?")
         
-        channel = event.arguments[1]
+        channel = event.arguments[1]            
         names = event.arguments[2]
+        # Check for channel specific spam prot
+        if channel in self.channel_spam_prots:
+            oldNamesTime = self.channel_spam_prots[channel]["names_told"]
+            oldnames = self.channel_spam_prots[channel]["names"]
+            curTime = int(time.time()) # self.debug_print(f"spamtest names_told | oldTime {oldNamesTime} curtime {curTime}")
+            if oldNamesTime == 0 or oldNamesTime + 100 < curTime:
+                self.channel_spam_prots[channel]["names_told"] = curTime
+                self.channel_spam_prots[channel]["names"] = names
+            elif oldnames != names:
+                self.channel_spam_prots[channel]["names_told"] = curTime
+                self.channel_spam_prots[channel]["names"] = names                
+            else: # self.debug_print("spamtest names_told blocked")
+                return
+            
         finalReply = f'{self.get_word("on_the_channel")} @ {channel} : **{names}**'
         #self.debug_print(finalReply)
 
         # Update the users
         self.update_irc_users(channel, names)
 
-        # If requested - Send queried irc names to discord
-        if self.ircNamesQueried == 1:
-            discord_chan = self.irc_channel_sets[channel]["real_chan"]
-            self.discord.send_irc_msg_to_discord(discord_chan, None, finalReply) # self.discord.send_discord_message(discord_chan, finalReply)
-            self.ircNamesQueried = 0
+        # If requested - Send queried irc names to discord with small delay / to make webhook slower than bot itself..
+        discord_chan = self.irc_channel_sets[channel]["real_chan"]
+        timers.add_timer("", 1.0, self.discord.send_irc_msg_to_discord, discord_chan, None, finalReply)
+        #self.discord.send_irc_msg_to_discord(discord_chan, None, finalReply) # self.discord.send_discord_message(discord_chan, finalReply)
 
     def on_whoreply(self, connection, event):
         """ Event handler for /who -reply """
@@ -1009,7 +1034,7 @@ class IRC:
             time.sleep(2)
             self.debug_print(f"[IRC] Joined to channel {event.target}")
                 
-            joinmsg = f"** !! {self.get_word('connected')} 'IRC {event.target}' - 'Discord #{discord_chan}' -{self.get_word('bridge')} == {self.get_word('msgs_on_channels_being_relayed')} !! **"
+            joinmsg = f"** `!! {self.get_word('connected')} 'IRC {event.target}' - 'Discord #{discord_chan}' -{self.get_word('bridge')} == {self.get_word('msgs_on_channels_being_relayed')} !!` **"
             # On this occasion we actually want to send this message to discrd through the bot itself, instead of possible webhook
             # DO WE THOUGH ? -> Nope. -> Yep. More clear, maybe not more clean, in Discord.
             self.discord.send_discord_message(discord_chan, joinmsg)
@@ -1018,9 +1043,9 @@ class IRC:
 
             # Also query the IRC topic and channel members and inform
             # to DISCORD as soon as we are connected to IRC-channel
-            self.unset_discord_topic_query()
             self.query_irc_topic_to_discord(event.target)
             self.query_irc_names_to_discord(event.target)
+            # .. Actually should (?) happen automatically when joining a channel ? Also spam-protected (?)
 
             # Print discord channel topic on the IRC channel
             # And print the discord user statuses on IRC channel
@@ -1166,15 +1191,11 @@ class IRC:
             fixTopicString = fixTopicString[:-2] # strip ['
             fixTopicString = fixTopicString[2:]  #  and  '] from raw Arg
             
-            if fixTopicString != self.lastTopicInformed or self.lastTopicInformedSpamProt == 0:
-                self.lastTopicInformed = fixTopicString
-                self.lastTopicInformedSpamProt = 1
+            # Format & fix the topic string to channel and to discord message
+            fullTopicString = f'{irc_channel} - {self.get_word("topic_changed")}: **{fixTopicString}**'
 
-                # Format & fix the topic string to channel and to discord message
-                fullTopicString = f'{irc_channel} - {self.get_word("topic_changed")}: **{fixTopicString}**'
-
-                # Send to Matching discord-channel:
-                self.send_irc_topic_to_discord(fullTopicString, irc_channel)
+            # Send to Matching discord-channel:
+            self.send_irc_topic_to_discord(fullTopicString, irc_channel)
             
     # event.type 'TOPIC' -> function 'on_topic'
     # Does _not_ get called on IRCnet
@@ -1420,7 +1441,7 @@ class IRC:
         for irc_channel in self.irc_channel_sets:
             self.debug_print(f"[IRC] Joining to {irc_channel} in {channel_join_delay} seconds")
             timers.add_timer(f"join-{irc_channel}", channel_join_delay, self.connection.join, irc_channel)
-            channel_join_delay += 0.6
+            channel_join_delay += 0.4
 
         self.discord.set_status() # start looping the statuses
 
@@ -1472,8 +1493,13 @@ class IRC:
         self.discord.set_status("Lost IRC-connection.")
 
         # retry connection self.maxConnectRetries times
-        if connection == self.connection:            
-            self.irc_connection_successfull = 0
+        if connection == self.connection:  
+
+            # Report the lost connection to Discord, for one time.
+            if self.irc_connection_successful == 1:
+                self.discord.send_to_all_discord_channels(f'[IRC] `Connection to server lost ... trying to re-connect ... Unable to relay the messages at this moment.`')
+
+            self.irc_connection_successful = 0
             if connection.sent_quit == 1:
                 connection.sent_quit = 0
                 return
@@ -1483,7 +1509,7 @@ class IRC:
             if self.disconnectretries >= self.maxConnectRetries:
                 # And print errors and message to discord if unsuccessfull with reconnecting to IRC
                 self.debug_print(f"[IRC] Failed to connect {self.maxConnectRetries} times, aborting.")
-                self.discord.send_to_all_discord_channels(f'{self.get_word("retried")} {self.maxConnectRetries} {self.get_word("times_no_success")}: {event.source} {event.arguments[0]}')
+                self.discord.send_to_all_discord_channels(f'`{self.get_word("retried")} {self.maxConnectRetries} {self.get_word("times_no_success")}: {event.source} {event.arguments[0]}`')
                 time.sleep(1)
                 # And then shut down the bot processes
                 self.discord.shutdown()
