@@ -59,6 +59,7 @@ class IRC:
 
         # set configurations from the settings
         self.is_running = 0
+        self.irc_connection_successfull = 0
 
         ## ! See the settings.json "comments" - for details concerning the settings !
         self.nick = irc_settings["bot_nickname"]
@@ -68,6 +69,7 @@ class IRC:
         self.connection = self.reactor.server()
         self.connection.sent_quit = 0
         self.bot_realname = irc_settings["bot_realname"]
+        self.callbacksAdded = 0
 
         self.nick_prefix_in_discord = irc_settings['ircNickPrefix']
         self.nick_postfix_in_discord = irc_settings['ircNickPostfix']
@@ -110,16 +112,9 @@ class IRC:
 
         # Initialize connection variables 
         # & Connect to IRC-server
-        self.irc_connection_successfull = 0
-        irc_retries = 10
-        while self.is_running and self.irc_connection_successfull == 0 and irc_retries >= 0:
-            try:
-                self.connect()
-                self.irc_connection_successfull = 1
-            except:
-                self.debug_print(f"[IRC] Problem with connecting to irc-server - retrying {irc_retries} / 10 ... ")
-                time.sleep(1.0)
-                irc_retries -= 1
+        self.connect()
+        # ... if the connection fails, we will receive fail/disconnect event,
+        #     and the re-connecting is handled then from the event loop.
 
         # IRC-bots event handling -loop
         loop_process_time = 0.01 # 0.2 original -> 0.1, but fast messages not beying relayed still (?)
@@ -137,12 +132,12 @@ class IRC:
         - Add IRC-event message handlers
         """
         self.debug_print("[IRC] Connecting to irc server ...")
-        self.discord.set_status("Connecting to IRC...")
+        self.discord.set_status("Connecting to IRC...")        
         try:
-            c = self.connection.connect(self.server, self.port, self.nick, None, self.bot_hostname, self.bot_realname)
-            # With successfull connection - add all callbacks
-            if self.connection:
-                self.debug_print("[IRC] Caught the IRC-connection ...")
+            c = self.connection
+
+            # Add event handlers / callbacks (but only once)
+            if self.callbacksAdded == 0:
                 c.add_global_handler("all_raw_messages", self.on_all_raw) # ! Should remove the RAW-messages after connection establishment to not spam !
                 c.add_global_handler("pubmsg", self.on_pubmsg)
                 c.add_global_handler("join", self.on_join)
@@ -160,14 +155,19 @@ class IRC:
                 c.add_global_handler("error", self.on_error_event)
                 c.add_global_handler("whoreply", self.on_whoreply)
                 c.add_global_handler("privmsg", self.on_privmsg)
-                #c.add_global_handler("privnotice", self.on_privnotice)
-
                 c.add_global_handler("topic", self.on_topic)
+                #c.add_global_handler("privnotice", self.on_privnotice)
                 # Numeral hooks/handlers do not seem to work for some reason on IRCnet ?
                 # -> Currently parsing these from Raw Events and calling these from the Raw Handler.. 
                 ## c.add_global_handler("331", self.on_rpl_notopic)
                 ## c.add_global_handler("332", self.on_rpl_topic)
                 ## c.add_global_handler("333", self.on_rpl_topicwhotime)
+                self.callbacksAdded = 1            
+            
+            c.connect(self.server, self.port, self.nick, None, self.bot_hostname, self.bot_realname)
+            # With successfull connection - add all callbacks
+            if self.connection:
+                self.debug_print("[IRC] Connecting ...")
 
             # Retry if unsuccessfull conncetion
             else:
@@ -290,8 +290,11 @@ class IRC:
 
     def debug_print(self, message):
         """ print on console with thread lock (= mutex ?) """
-        with self.thread_lock:
+        if self.thread_lock.locked(): # Called from Discord setup - already locked
             print(message)
+        else:
+            with self.thread_lock:
+                print(message)
 
     def change_language(self, new_language):
         """
@@ -399,7 +402,7 @@ class IRC:
             self.irc_channel_sets[value["irc_chan"]] = {"discord_chan": item, "webhook": value["webhook"], "real_chan": value["real_chan"]}
 
         # If IRC-connection is already established when receiving the channels, join to them
-        if self.irc_connection_successfull == True:
+        if self.irc_connection_successfull == 1:
             self.slow_join_to_set_channels()
     
     def pop_from_channels(self, nick):
@@ -917,7 +920,8 @@ class IRC:
             self.debug_print(f"[IRC][RAW] {event.arguments}")
             return
         # 001 = Welcome message
-        elif "001" in splitArgs: 
+        elif "001" in splitArgs: # Connection successful & finalized (?)
+            self.irc_connection_successfull = 1
             self.debug_print(f"[IRC][RAW] {event.arguments}")
             return
         # 331 - No topic -reply
@@ -1411,18 +1415,14 @@ class IRC:
         """ IRC-bot will join the IRC-channels in currently set channel_sets - given/fulfilled by the Discord
         - If IRC-connection is faster than Discord, this needs to be called when receiving the channels from Discord """
 
-        channel_join_delay = 0.1
         # "Slow"-join to channels, with increasing delays
-        if self.thread_lock.locked(): # Called from Discord setup - already locked
-            for irc_channel in self.irc_channel_sets:
-                print(f"[IRC] Joining to {irc_channel} in {channel_join_delay} seconds")
-                timers.add_timer(f"join-{irc_channel}", channel_join_delay, self.connection.join, irc_channel)
-                channel_join_delay += 0.6
-        else: # Default with-lock debug -printing
-            for irc_channel in self.irc_channel_sets:
-                self.debug_print(f"[IRC] Joining to {irc_channel} in {channel_join_delay} seconds")
-                timers.add_timer(f"join-{irc_channel}", channel_join_delay, self.connection.join, irc_channel)
-                channel_join_delay += 0.6
+        channel_join_delay = 0.1
+        for irc_channel in self.irc_channel_sets:
+            self.debug_print(f"[IRC] Joining to {irc_channel} in {channel_join_delay} seconds")
+            timers.add_timer(f"join-{irc_channel}", channel_join_delay, self.connection.join, irc_channel)
+            channel_join_delay += 0.6
+
+        self.discord.set_status() # start looping the statuses
 
     ########################################################
     # Handling of successfull IRC-server connection
@@ -1435,7 +1435,6 @@ class IRC:
         """
 
         # Successfully connected
-        self.irc_connection_successfull = 1
         self.debug_print(f"[IRC] Successful connection to {event.source}")
         # self.debug_print(str(self.irc_channel_sets))
         
@@ -1473,7 +1472,8 @@ class IRC:
         self.discord.set_status("Lost IRC-connection.")
 
         # retry connection self.maxConnectRetries times
-        if connection == self.connection:
+        if connection == self.connection:            
+            self.irc_connection_successfull = 0
             if connection.sent_quit == 1:
                 connection.sent_quit = 0
                 return

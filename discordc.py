@@ -68,6 +68,7 @@ class Discord:
         self.last_used_channel = ""
         self.connected_to_discord = 0
         self.temp_status_message = ""
+        self.discord_error_spam_timer = 0
 
         # Init logger & Create a FileHandler for logging to a file
         self.discord_logger = logging.getLogger('discordc')
@@ -187,7 +188,15 @@ class Discord:
     def send_discord_message_b(self, discord_chan, message):
         """ Wrapper for async Discord message send """
         global discord_bot
-        asyncio.run_coroutine_threadsafe(send_discord_message_async(discord_chan, message), discord_bot.loop)
+        try:
+            asyncio.run_coroutine_threadsafe(send_discord_message_async(discord_chan, message), discord_bot.loop)
+            self.discord_error_spam_timer = 0
+        except Exception as e:      
+            debug_print(f"[Discord] Error: {e}")
+            self.discord_logger.exception(f"[Discord] Error: {e}")
+            self.discord_error_spam_timer += 1
+            if self.discord_error_spam_timer > 10:
+                irc.send_to_all_irc_channels(f"[Discord] Error: {e}")
 
     def send_to_all_discord_channels(self, message):
         """ Send message to All configured DISCORD channels"""
@@ -271,11 +280,14 @@ class Discord:
             return
 
         if statusmsg != "": # Set Custom status
+            self.temp_status_message = statusmsg # Set Custom Status string
             asyncio.run_coroutine_threadsafe(set_status_async(statusmsg, 5), discord_bot.loop)
             # Stop looping statuses if manual status is set
             if "set_status" in timers.timers:
                 timers.cancel_timer("set_status")
             return
+        
+        self.temp_status_message = "" # empty temp string if no new status string has been given.
 
         # Or loop through settings.json -statuses with "Listening to..."
         c_status = settings["status_messages"][self.statusindex]
@@ -458,6 +470,7 @@ async def set_status_async(status, activityType=2):
     - activityType = 4 = custom
     - activityType = 5 = competing
     - !NOTE! Bots are not allowed to use the '4'-Custom type !
+    - Changig status does not seem to work either (?)
     """
     activity_type = discord.ActivityType.listening
     if activityType != 2:
@@ -472,6 +485,7 @@ async def set_status_async(status, activityType=2):
         if activityType == 5:
             activity_type = discord.ActivityType.competing
     await discord_bot.change_presence(activity=discord.Activity(type=activity_type, name=status))
+    #await discord_bot.change_presence(activity=discord.Activity(type=activity_type, name=status), status=discord.Status.dnd)
 
 async def shutdown_async():
     """ Async shutdown discord bot """
