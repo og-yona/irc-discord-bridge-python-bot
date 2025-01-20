@@ -36,4 +36,3 @@ t2.start()
 # Main thread : Discord
 discord.run()
 irc.stop_loop()
-timers.shutdown_timers()

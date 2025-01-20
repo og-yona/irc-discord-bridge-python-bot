@@ -29,7 +29,7 @@ def run():
             time.sleep(0.1)
         except Exception as e:
             with thread_lock:
-                print(f"Timer caught an error: {e}")
+                print(f"[TIMERS] : Caught an error: {e}")
 
 def shutdown_timers():
     """ 

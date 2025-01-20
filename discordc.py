@@ -116,6 +116,7 @@ class Discord:
             
         self.timesleep = 0
         irc.sent_quit_on()
+        timers.shutdown_timers()
         if exiting == False:
             timers.add_timer("", self.timesleep+1, irc.connection.disconnect, f'!! {irc.get_word("quitmessage")} {uptime} *({reason})* !!')
             asyncio.run_coroutine_threadsafe(do_async_stuff(self.die, self.timesleep + 3), discord_bot.loop)
@@ -322,6 +323,22 @@ class Discord:
         else:
             return "No topic set."
 
+    def give_short_version_of_message(self, content, length):
+        """
+        # Give Short version of Message
+        - takes in a message string & how many max chars we wanty
+        - checks the length, and if needed, shortens the message
+        and adds "..." prefix to indicate that message has been "cut short"
+        -returns the shortened message
+        """
+        ## .. combine the reaction to snippet of original message
+        if len(content) > length:
+            shortMessage = content[:length]
+            shortMessage += "..."
+        else: # We want to refer max <length> character of original message to IRC
+            shortMessage = content
+        return shortMessage
+
     #####################################
     #               DISCORD CLASS END ] # 
     ##################################### 
@@ -443,22 +460,6 @@ def give_local_timestamp_string(message_created_at):
     timeFormatted = timestampLocal.strftime("%H:%M")
     return timeFormatted
 
-def give_short_version_of_message(content, length):
-    """
-    # Give Short version of Message
-    - takes in a message string & how many max chars we wanty
-    - checks the length, and if needed, shortens the message
-      and adds "..." prefix to indicate that message has been "cut short"
-    -returns the shortened message
-    """
-    ## .. combine the reaction to snippet of original message
-    if len(content) > length:
-        shortMessage = content[:length]
-        shortMessage += "..."
-    else: # We want to refer max <length> character of original message to IRC
-        shortMessage = content
-    return shortMessage
-
 def error_report_to_irc_disc_problem(e):
     """ Report to IRC that there is a discord-connection problem - only every 10th error message allowed (unless reseted meanwhile with success)  """
     if discordc.discord_error_spam_timer ==  0:
@@ -485,7 +486,7 @@ async def del_my_message_async(msg_object):
 
 async def send_discord_webhook_async(webhooklink, finalmsg, renderedUsername):
     try:
-        webhook = DiscordWebhook(url=webhooklink, content=finalmsg, username=renderedUsername, timeout=1)
+        webhook = DiscordWebhook(url=webhooklink, content=finalmsg, username=renderedUsername, timeout=5)
         response = webhook.execute()
         return response
     except Exception as e:      
@@ -600,7 +601,7 @@ async def on_message_edit(before, after):
         discordc.last_used_channel = after.channel
 
         cleanedBefore = irc_dressup(beforecontent)
-        shortMessage = give_short_version_of_message(cleanedBefore, 70)
+        shortMessage = discordc.give_short_version_of_message(cleanedBefore, 70)
         cleanedAfter = irc_dressup(aftercontent)
 
         editMessage = f'{discord_settings["relayTagUsed"]}{discord_settings["relayNickPrefix"]}{author}{discord_settings["relayNickPostfix"]} {cleanedAfter} ([EDIT] {timeFormatted} <{author}> {shortMessage})'
@@ -648,7 +649,7 @@ async def on_reaction_add(reaction, user):
         # Build the description string about reaction
         reactionString = replace_emojis(str(reaction.emoji))
         ## .. combine the reaction to snippet of original message
-        shortMessage = give_short_version_of_message(content, 70)
+        shortMessage = discordc.give_short_version_of_message(content, 70)
 
         # Format to our IRC-message relaying format 
         fixedMessage = f'{discord_settings["relayTagUsed"]}{discord_settings["relayNickPrefix"]}{user.display_name}{discord_settings["relayNickPostfix"]} {reactionString} (@ {timeFormatted} <{author.display_name}> {shortMessage})'
@@ -750,7 +751,7 @@ async def on_message(message):
         repliedToMessage = replace_emojis(str(ref))
 
         ## .. combine the reaction to snippet of original message
-        shortMessage = give_short_version_of_message(repliedToMessage, 70)
+        shortMessage = discordc.give_short_version_of_message(repliedToMessage, 70)
 
         # fix some of the "known" formatting problems with current formats/syntaxes
         shortMessage = do_extra_tag_cleanups(shortMessage)
@@ -816,7 +817,8 @@ async def on_message(message):
     
     # Bridge uptime commmand - Simply sends the bot's uptime to Discord and IRC.
     elif cmd == "!status" or cmd == "!tila":
-        discordc.send_uptime(message.channel, irc_chan)
+        uptime = irc.get_uptime()
+        irc.send_irc_and_discord(irc_chan, f'{irc.get_word("bridge_uptime")} {uptime}')
     
     # Who are around in linked IRC-channel
     elif cmd == "!who" or cmd == "!ketä" or cmd == "!kuka":

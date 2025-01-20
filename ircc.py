@@ -856,6 +856,7 @@ class IRC:
             soup = self.get_page_soup(url)                # Request the http-parse/soup from given URL
             title = self.get_title_from_soup(soup)        # Get the page-title from soup
             description = self.get_short_description_from_soup(soup) # Get the short description from soup
+            
             duration = self.get_video_dur_from_soup(soup) # Get the youtube video duration from soup
             if (title):
                 titleString = f"{title}"
@@ -873,7 +874,7 @@ class IRC:
             if (fullInfoString): # Send the title + duration info-string
                 self.send_message(irc_channel, fullInfoString)
             if (description):    # Send the short-description info-string
-                description_string = f"({description})"
+                description_string = f"({self.discord.give_short_version_of_message(description, 400)})"
                 self.send_message(irc_channel, description_string)
    
     def try_to_process_message_urls(self, message, irc_channel):
@@ -1330,10 +1331,14 @@ class IRC:
                 else:
                     self.send_message(event.target, f'{self.get_word("invalid_command_param")}')
 
+        # Info / short help
+        elif cmd == "!info":
+            self.send_message(event.target, self.get_help("!info"))
+
         # Status / Uptime (of bridge/bots)
         elif cmd == "!status" or cmd == "!tila":
             uptime = self.get_uptime()
-            self.send_irc_and_discord(discord_chan, event.target, f'{self.get_word("bridge_uptime")} {uptime}')
+            self.send_irc_and_discord(event.target, f'{self.get_word("bridge_uptime")} {uptime}')
 
         # Who are around in linked Discord-channel
         elif cmd == "!who" or cmd == "!ketä" or cmd == "!kuka":       
